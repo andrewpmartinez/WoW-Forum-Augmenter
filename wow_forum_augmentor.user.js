@@ -6,12 +6,27 @@
 // @include        http://forums.wow-europe.com/*
 // ==/UserScript==
 
+
+
 WFA =
 {
 	worldThreshold: 100,
 	localThreshold: 100,
 	realmThreshold: 3,
-	ignoreOpacity: 0.45,
+	MAX_LEGENDARY: 3,
+	MAX_EPIC: 25,
+	MAX_RARE: 500,
+	COLOR_LEGENDARY:"#FF8000",
+	COLOR_EPIC: "#A335EE",
+	COLOR_RARE: "#0070DD",
+	COLOR_COMMON: '',
+	IS_REQUESTING: 1,
+	FAILED_REQUEST: 2,
+	ignoredPostOpacity: 0.45,
+	applyIgnoredPostOpacity: true,
+	applyColorPostBorder: false,
+	maxEntryAge: 86400,
+	maxCacheAge: 86400,
 	rankCache:{},
 	getForumArea: function()
 	{
@@ -36,12 +51,13 @@ WFA =
 		if( guildName && realm )
 		{
 			var key = WFA.generateGuildRealmKey( area, realm, guildName );
-			if( !WFA.rankCache[key] )
+			//not cached or cache is old
+			if( !WFA.rankCache[key] || ((new Date()) - WFA.rankCache[key].timestamp) > WFA.maxEntryAge )
 			{
 				WFA.requestRank( area, realm, guildName, post );
-				return 1;
+				return WFA.IS_REQUESTING;
 			}
-			return WFA.rankCache[key];
+			return WFA.rankCache[key].value;
 		}
 		else
 		{
@@ -58,12 +74,15 @@ WFA =
 	},
 	stylePost: function( post, rankInfo )
 	{
-		if( !rankInfo || (rankInfo.world > WFA.wordThreshold && rank.info && rankInfo.local > WFA.localThreshold && rankInfo.realm > WFA.localThreshold ) )
+		if( WFA.applyIgnoredPostOpacity )
 		{
-			post.style.opacity = WFA.ignoreOpacity;
+			if( !rankInfo || (rankInfo.world > WFA.worldThreshold && rank.info && rankInfo.local > WFA.localThreshold && rankInfo.realm > WFA.realmThreshold ) )
+			{
+				post.style.opacity = WFA.ignoredPostOpacity;
+			}
 		}
 	},
-	requestRank: function( area, realm, guild, post )
+	requestRank: function( area, realm, guild, post, onRequest )
 	{
 		var key = WFA.generateGuildRealmKey( area, realm, guild );
 		area = area.replace( /'/g, '-' ).replace( /\s/g, "+").toLowerCase();;
@@ -83,7 +102,7 @@ WFA =
 			onload: function(responseDetails)
 			{
 				
-				var responseObj = 2;
+				var responseObj = WFA.FAILED_REQUEST;
 				
 				if( responseDetails.responseText )
 				{
@@ -92,10 +111,10 @@ WFA =
 				
 				if( !responseObj )
 				{
-					responseObj = 2;	
+					responseObj = WFA.FAILED_REQUEST;	
 				}
 				
-				WFA.rankCache[key] = responseObj;
+				WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
 				WFA.processPost( area, realm, guild, post );
 				
 			}
@@ -130,16 +149,16 @@ WFA =
 	},
 	getRankColor: function( rank )
 	{
-		if( rank < 4 )
+		if( rank <= WFA.MAX_LEGENDARY )
 		{
-			return "#FF8000";
+			return WFA.COLOR_LEGENDARY;
 		}
-		else if( rank <26 )
+		else if( rank <= WFA.MAX_EPIC )
 		{
-			return "#A335EE"
+			return WFA.COLOR_EPIC;
 		}
-		else if( rank <501 )
-			return "#0070DD";
+		else if( rank <= WFA.MAX_RARE )
+			return WFA.COLOR_RARE;
 		else
 		{
 			return "#1EFF00"
@@ -164,16 +183,19 @@ WFA =
 		else
 		{
 			var guildRankInfo = WFA.getGuildRankInfo( area, realm, guild, post );
-			if( guildRankInfo && guildRankInfo != 1 && guildRankInfo.score )
+			if( guildRankInfo && guildRankInfo != WFA.IS_REQUESTING && guildRankInfo.score )
 			{
 				var realmNode = WFA.getRealmNode( post );
 				var newNode = document.createElement( "DIV");
 				newNode.style.color = "#CCCCCC";
 				
-				var minRank = Math.min( guildRankInfo.world_rank, guildRankInfo.area_rank );
-				var borderColor = WFA.getRankColor( minRank );
-				var innerBorderElement = WFA.getBorderElement( post );
-				innerBorderElement.style.borderColor = borderColor;
+				if( WFA.applyColorPostBorder )
+				{
+					var minRank = Math.min( guildRankInfo.world_rank, guildRankInfo.area_rank );
+					var borderColor = WFA.getRankColor( minRank );
+					var innerBorderElement = WFA.getBorderElement( post );
+					innerBorderElement.style.borderColor = borderColor;
+				}
 				
 				newNode.innerHTML = WFA.buildRankText( guildRankInfo );
 				realmNode.parentNode.parentNode.appendChild( newNode );
