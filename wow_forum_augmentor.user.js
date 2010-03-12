@@ -138,7 +138,7 @@ WFA =
 		{
 			return "#A335EE"
 		}
-		else if( rank <500 )
+		else if( rank <501 )
 			return "#0070DD";
 		else
 		{
