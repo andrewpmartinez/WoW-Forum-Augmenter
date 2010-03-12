@@ -6,14 +6,6 @@
 // @include        http://forums.wow-europe.com/*
 // ==/UserScript==
 
-// ==UserScript==
-// @name           Wow Forum Augmentor
-// @namespace      WFA
-// @description    Makes wow forums suck less
-// @include        http://forums.worldofwarcraft.com/*
-// @include        http://forums.wow-europe.com/*
-// ==/UserScript==
-
 WFA =
 {
 	worldThreshold: 100,
