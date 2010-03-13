@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name           WoW Forum Augmentor
-// @namespace      WFA
-// @description    Enhances World of Warcraft NA/EU forums with WoW Progress scores
-// @include        http://forums.worldofwarcraft.com/*
-// @include        http://forums.wow-europe.com/*
+// @name		   WoW Forum Augmentor
+// @namespace	  WFA
+// @description	Enhances World of Warcraft NA/EU forums with WoW Progress scores
+// @include		http://forums.worldofwarcraft.com/*
+// @include		http://forums.wow-europe.com/*
 // ==/UserScript==
 
 var WFA =
@@ -16,16 +16,16 @@ var WFA =
 	applyColorPostBorder: true, //ok to change, whether the border around each post should also be colored (default=true)
 	maxEntryAge: 86400, //ok to change, value in seconds. Maximum length of time any one record should be kept (86400s = 24hrs)
 	maxCacheAge: 86400, //ok to change, value in seconds. Maximum length of time to keep the entire cache (86400s = 24hrs)
-	MAX_LEGENDARY: 3,	//maximum world/region rank for legendary status, ok to change, should be higher than 0 and lower than epic
-	MAX_EPIC: 25,	//maximum world/region rank for epic status, ok to change should be higher than legendary & lower than rare
-	MAX_RARE: 500,	//maximum world/region rank for rare status, ok to change should be higher than epic
-	COLOR_LEGENDARY:"#FF8000",	//legendary HTML hex color (orange), ok to change
-	COLOR_EPIC: "#A335EE",	//epic HTML hex color (purple), ok to change
-	COLOR_RARE: "#0070DD",	//rare HTML hex color (blue), ok to change
-	COLOR_COMMON: "#1EFF00",	//rare HTML hex color (green), ok to change
+	MAX_LEGENDARY: 3, //maximum world/region rank for legendary status, ok to change, should be higher than 0 and lower than epic
+	MAX_EPIC: 25, //maximum world/region rank for epic status, ok to change should be higher than legendary & lower than rare
+	MAX_RARE: 500, //maximum world/region rank for rare status, ok to change should be higher than epic
+	COLOR_LEGENDARY:"#FF8000", //legendary HTML hex color (orange), ok to change
+	COLOR_EPIC: "#A335EE", //epic HTML hex color (purple), ok to change
+	COLOR_RARE: "#0070DD", //rare HTML hex color (blue), ok to change
+	COLOR_COMMON: "#1EFF00", //rare HTML hex color (green), ok to change
 	COLOR_BLUE: "#00C0FF", //blue post border color, ok to change
-	IS_REQUESTING: 1,	//do not change: constant used to denote a requesting status
-	FAILED_REQUEST: 2,	//do not change: constant used to denote a failed request
+	IS_REQUESTING: 1, //do not change: constant used to denote a requesting status
+	FAILED_REQUEST: 2,//do not change: constant used to denote a failed request
 	rankCache:{}, //do not change
 	
 	/**************************************************************
@@ -58,7 +58,7 @@ var WFA =
 	 * @param (String) area Two digit area locale
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guild A WoW guild located in the specified 
-	 *                 area & realm
+	 *				 area & realm
 	 *
 	 **************************************************************/
 	generateGuildRealmKey: function( area, realm, guild )
@@ -71,13 +71,13 @@ var WFA =
 	 * @param (String) area Two digit area locale
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guildName A WoW guild located in the 
-	 *                 specified area & realm
+	 *				 specified area & realm
 	 * @param (HTML Object) An HTML node reference to a forum post
 	 * @todo: Change post to be a callback functor in order to
 	 *		  decouple response behaviour.
 	 *
 	 * @returns WFA.IS_REQUEST, WFA.FAILED_REQUEST, or a rank
-	 *		    info object: {score:,world_rank,area_rank:}
+	 *			info object: {score:,world_rank,area_rank:}
 	 * 
 	 *
 	 **************************************************************/
@@ -169,14 +169,14 @@ var WFA =
 	 * @param (String) area Two digit area locale
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guild A WoW guild located in the 
-	 *                 specified area & realm
+	 *				 specified area & realm
 	 * @param (HTML Object) An HTML node reference to a forum post
 	 * 
 	 * @todo: Change post to be a callback functor in order to
 	 *		  decouple response behaviour.
 	 *
 	 * @returns WFA.IS_REQUEST, WFA.FAILED_REQUEST, or a rank
-	 *		    info object: {score:,world_rank,area_rank:}
+	 *			info object: {score:,world_rank,area_rank:}
 	 *
 	 **************************************************************/
 	requestRank: function( area, realm, guild, post, onRequest )
@@ -223,9 +223,9 @@ var WFA =
 	 * text.
 	 *
 	 * @param (HTML Object) post A HTML node reference to an element
-	 *                      that represents a post.
+	 *					  that represents a post.
 	 * @returns (HTML Object) A HTML node reference to the element
-	 *                        that holds the guild text.
+	 *						that holds the guild text.
 	 *
 	 **************************************************************/
 	getGuildNode: function( post )
@@ -238,9 +238,9 @@ var WFA =
 	 * text.
 	 *
 	 * @param (HTML Object) post A HTML node reference to an element
-	 *                      that represents a post.
+	 *					  that represents a post.
 	 * @returns (HTML Object) A HTML node reference to the element
-	 *                        that holds the realm text.
+	 *						that holds the realm text.
 	 *
 	 **************************************************************/
 	getRealmNode: function( post )
@@ -252,9 +252,9 @@ var WFA =
 	 * Returns the HTML element that contains a post's border.
 	 *
 	 * @param (HTML Object) post A HTML node reference to an element
-	 *                      that represents a post.
+	 *					  that represents a post.
 	 * @returns (HTML Object) A HTML node reference to the element
-	 *                        that represents a post's border.
+	 *						that represents a post's border.
 	 *
 	 **************************************************************/
 	getBorderElement: function( post )
@@ -266,7 +266,7 @@ var WFA =
 	 * Returns true/false if the post is a Blizzard employee post
 	 *
 	 * @param (HTML Object) post A HTML node reference to an element
-	 *                      that represents a post.
+	 *					  that represents a post.
 	 * @returns (Boolean) True/false if this is a blue post
 	 *
 	 **************************************************************/
@@ -317,7 +317,7 @@ var WFA =
 	 **************************************************************/
 	buildRankText: function( info )
 	{
-		var world = WFA.getRankColor( info.word_rank );
+		var world = WFA.getRankColor( info.world_rank );
 		var area = WFA.getRankColor( info.area_rank );
 		var areaText = WFA.getForumArea();
 		return 'World: <span style="color:'+world+'">' + info.world_rank + '<span><BR>'+areaText+': <span style="color:'+area+'>' + info.area_rank + '</span>';
@@ -330,7 +330,7 @@ var WFA =
 	 * @param (String) area Two digit area locale
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guild A WoW guild located in the 
-	 *                 specified area & realm
+	 *				 specified area & realm
 	 * @param (HTML Object) An HTML node reference to a forum post
 	 * 
 	 * @todo: Change post to be a callback functor in order to
@@ -366,18 +366,18 @@ var WFA =
 	 **************************************************************/
 	setApplyBorderColor: function( shouldColor )
 	{
-	    if( shouldColor )
-	    {
-	        WFA.applyColorPostBorder = 1;
-	        GM_setValue( 'applyColorPostBorder', 1 ) 
-	    }
-	    else
-	    {
-	        WFA.applyColorPostBorder = 0;
-	        GM_setValue( 'applyColorPostBorder', 0 ) 
-	    }   
+		if( shouldColor )
+		{
+			WFA.applyColorPostBorder = 1;
+			GM_setValue( 'applyColorPostBorder', 1 ) 
+		}
+		else
+		{
+			WFA.applyColorPostBorder = 0;
+			GM_setValue( 'applyColorPostBorder', 0 ) 
+		}   
 	},
-    /**************************************************************
+	/**************************************************************
 	 * Set the option of whether to grey posts out
 	 *
 	 * @param (Boolean) shouldIgnore To grey posts or not
@@ -385,16 +385,16 @@ var WFA =
 	 **************************************************************/
 	setIgnorePosts: function( shouldIgnore )
 	{
-	    if( shouldIgnore )
-	    {
-	        WFA.applyIgnoredPostOpacity = 1;
-	        GM_setValue( 'applyIgnoredPostOpacity', 1 )
-	    }
-	    else
-	    {
-	        WFA.applyIgnoredPostOpacity = 0;
-	        GM_setValue( 'applyIgnoredPostOpacity', 0 )
-	    }   
+		if( shouldIgnore )
+		{
+			WFA.applyIgnoredPostOpacity = 1;
+			GM_setValue( 'applyIgnoredPostOpacity', 1 )
+		}
+		else
+		{
+			WFA.applyIgnoredPostOpacity = 0;
+			GM_setValue( 'applyIgnoredPostOpacity', 0 )
+		}   
 	},
 	/**************************************************************
 	 * Return whether post borders are being greyed out to ignore
@@ -405,7 +405,7 @@ var WFA =
 	 **************************************************************/
 	getIgnorePosts:function()
 	{
-	    return WFA.applyIgnoredPostOpacity;
+		return WFA.applyIgnoredPostOpacity;
 	},
 	/**************************************************************
 	 * Return whether post borders are being colored or not.
@@ -415,7 +415,7 @@ var WFA =
 	 **************************************************************/
 	getApplyBorderColor:function()
 	{
-	    return WFA.applyColorPostBorder;   
+		return WFA.applyColorPostBorder;   
 	},
 	/**************************************************************
 	 * Loads all options from FireFox's saved variable cache
@@ -424,226 +424,226 @@ var WFA =
 	 **************************************************************/
 	loadOptions: function()
 	{
-	    WFA.setApplyBorderColor( GM_getValue( 'applyColorPostBorder' ) );
-	    WFA.setIgnorePosts(GM_getValue( 'applyIgnoredPostOpacity' ) );   
-	    
+		WFA.setApplyBorderColor( GM_getValue( 'applyColorPostBorder' ) );
+		WFA.setIgnorePosts(GM_getValue( 'applyIgnoredPostOpacity' ) );   
+		
 	}
 	
 }
 
 var WFA_OPTIONS = 
 {
-    //do not change anything here
-    handle: null, //created on initialize WFA Options tab
-    optionsPane: null, //created during build(), main options pane
-    reloadButton: null, //created during build(), reload page button
-    isOpen: false, //current state of the options pane
-    COLOR_BORDER_ID: "colorBorders", //ids used for check box elements
-    IGNORE_POSTS_ID: "ignorePosts",
-    /**************************************************************
+	//do not change anything here
+	handle: null, //created on initialize WFA Options tab
+	optionsPane: null, //created during build(), main options pane
+	reloadButton: null, //created during build(), reload page button
+	isOpen: false, //current state of the options pane
+	COLOR_BORDER_ID: "colorBorders", //ids used for check box elements
+	IGNORE_POSTS_ID: "ignorePosts",
+	/**************************************************************
 	 * Creates and displays the WFA Options tab.
 	 *
 	 **************************************************************/
-    initialize: function()
-    {
-        var handle = document.createElement("DIV");
-        handle.style.position = "fixed";
-        handle.style.width = "100px";
-        handle.style.lineHeight = "10px";
-        handle.style.fontSize = "10px";
-        handle.style.fontFamily = "sans-serif";
-        handle.style.color = "white";
-        handle.style.height = "12px";
-        handle.style.backgroundColor = "black";
-        handle.style.border = "1px solid grey";
-        handle.style.bottom = "0px";
-        handle.style.right = "0px";
-        handle.style.textAlign = "center";
-        handle.style.zIndex = 1;
-        handle.innerHTML = "WFA Options";
-        handle.addEventListener('mouseover',WFA_OPTIONS.onmouseover, true );
+	initialize: function()
+	{
+		var handle = document.createElement("DIV");
+		handle.style.position = "fixed";
+		handle.style.width = "100px";
+		handle.style.lineHeight = "10px";
+		handle.style.fontSize = "10px";
+		handle.style.fontFamily = "sans-serif";
+		handle.style.color = "white";
+		handle.style.height = "12px";
+		handle.style.backgroundColor = "black";
+		handle.style.border = "1px solid grey";
+		handle.style.bottom = "0px";
+		handle.style.right = "0px";
+		handle.style.textAlign = "center";
+		handle.style.zIndex = 1;
+		handle.innerHTML = "WFA Options";
+		handle.addEventListener('mouseover',WFA_OPTIONS.onmouseover, true );
 
-        WFA_OPTIONS.handle = handle;
-        document.body.appendChild( handle );  
-    },
-    /**************************************************************
+		WFA_OPTIONS.handle = handle;
+		document.body.appendChild( handle );  
+	},
+	/**************************************************************
 	 * Shows the main option pane; builds if necessary.
 	 *
 	 **************************************************************/
-    show: function()
-    {
-       if( !WFA_OPTIONS.optionsPane )
-       {
-            WFA_OPTIONS.build();
-       }
-       WFA_OPTIONS.optionsPane.style.display = "block";
-       WFA_OPTIONS.isOpen = true;
-       
-    },
-    /**************************************************************
+	show: function()
+	{
+	   if( !WFA_OPTIONS.optionsPane )
+	   {
+			WFA_OPTIONS.build();
+	   }
+	   WFA_OPTIONS.optionsPane.style.display = "block";
+	   WFA_OPTIONS.isOpen = true;
+	   
+	},
+	/**************************************************************
 	 * Hides the main option pane.
 	 *
 	 **************************************************************/
-    hide: function()
-    {
-      WFA_OPTIONS.optionsPane.style.display = "none";  
-      WFA_OPTIONS.isOpen = false;
-    },
-    /**************************************************************
+	hide: function()
+	{
+	  WFA_OPTIONS.optionsPane.style.display = "none";  
+	  WFA_OPTIONS.isOpen = false;
+	},
+	/**************************************************************
 	 * Builds the main options pane and all components.
 	 *
 	 **************************************************************/
-    build: function()
-    {
-        var optionsPane = document.createElement("DIV");
-        optionsPane.style.display = "none";
-        optionsPane.style.position = "fixed";
-        optionsPane.style.width = "125px";
-        optionsPane.style.lineHeight = "10px";
-        optionsPane.style.fontSize = "10px";
-        optionsPane.style.fontFamily = "sans-serif";
-        optionsPane.style.color = "white";
-        optionsPane.style.height = "100px";
-        optionsPane.style.backgroundColor = "black";
-        optionsPane.style.border = "1px solid grey";
-        optionsPane.style.bottom = "0px";
-        optionsPane.style.right = "0px";
-        optionsPane.style.textAlign = "center";
-        optionsPane.style.zIndex = 2;
-        optionsPane.innerHTML = "WFA Options";
-        
-        var optionsSubPane = document.createElement("TABLE");
-        var row = document.createElement( "TR" );
-        var cell = document.createElement( "TD" );
-        var checkBox = document.createElement( "INPUT" );
-        checkBox.type = "checkbox";
-        checkBox.id = WFA_OPTIONS.COLOR_BORDER_ID;
-        
-        var applyColorPostBorder = WFA.getApplyBorderColor();
-        
-        if( applyColorPostBorder == undefined )
-        {
-            applyColorPostBorder = 1;
-        }
-        checkBox.checked = applyColorPostBorder;
-        checkBox.addEventListener('click',WFA_OPTIONS.onclick, true );
-        cell.appendChild( checkBox );
-        row.appendChild( cell );
-        
-        cell = document.createElement( "TD" );
-        cell.innerHTML = "Color post borders";
-        row.appendChild( cell );
-        optionsSubPane.appendChild( row );
-        
-        row = document.createElement( "TR" );
-        cell = document.createElement( "TD" );
-        checkBox = document.createElement( "INPUT" );
-        checkBox.type = "checkbox";
-        checkBox.id = WFA_OPTIONS.IGNORE_POSTS_ID;
-        
-        var applyIgnoredPostOpacity = WFA.getIgnorePosts();
-        
-        if( applyIgnoredPostOpacity == undefined )
-        {
-            applyIgnoredPostOpacity = 1;
-        }
-        
-        checkBox.checked = applyIgnoredPostOpacity;
-        checkBox.addEventListener('click',WFA_OPTIONS.onclick, true );
-        cell.appendChild( checkBox );
-        row.appendChild( cell );
-        
-        cell = document.createElement( "TD" );
-        cell.innerHTML = "Gray ignored posts";
-        row.appendChild( cell );
-        optionsSubPane.appendChild( row );
-        
-        var button = document.createElement( "INPUT" );
-        button.type = "button";
-        button.addEventListener( 'click', function(){window.location.reload()}, true );
-        button.value = "Reload page";
-        button.style.marginBottom = '5px';
-        button.style.visibility = "hidden";
-        WFA_OPTIONS.reloadButton = button;
-        
-        var wowProgress = document.createElement( "SPAN" );
-        wowProgress.style.fontSize = "8px";
-        wowProgress.innerHTML = 'Powered By: <a href="http://wowprogress.com">WowProgress</a>';
-        
-        optionsPane.appendChild( optionsSubPane );
-        optionsPane.appendChild( button );
-        optionsPane.appendChild( wowProgress );
-        document.body.appendChild( optionsPane );
-        
-        WFA_OPTIONS.optionsPane = optionsPane;
-        
-        document.body.addEventListener('mouseover',WFA_OPTIONS.onmouseout, true );
-    },
-    /**************************************************************
+	build: function()
+	{
+		var optionsPane = document.createElement("DIV");
+		optionsPane.style.display = "none";
+		optionsPane.style.position = "fixed";
+		optionsPane.style.width = "125px";
+		optionsPane.style.lineHeight = "10px";
+		optionsPane.style.fontSize = "10px";
+		optionsPane.style.fontFamily = "sans-serif";
+		optionsPane.style.color = "white";
+		optionsPane.style.height = "100px";
+		optionsPane.style.backgroundColor = "black";
+		optionsPane.style.border = "1px solid grey";
+		optionsPane.style.bottom = "0px";
+		optionsPane.style.right = "0px";
+		optionsPane.style.textAlign = "center";
+		optionsPane.style.zIndex = 2;
+		optionsPane.innerHTML = "WFA Options";
+		
+		var optionsSubPane = document.createElement("TABLE");
+		var row = document.createElement( "TR" );
+		var cell = document.createElement( "TD" );
+		var checkBox = document.createElement( "INPUT" );
+		checkBox.type = "checkbox";
+		checkBox.id = WFA_OPTIONS.COLOR_BORDER_ID;
+		
+		var applyColorPostBorder = WFA.getApplyBorderColor();
+		
+		if( applyColorPostBorder == undefined )
+		{
+			applyColorPostBorder = 1;
+		}
+		checkBox.checked = applyColorPostBorder;
+		checkBox.addEventListener('click',WFA_OPTIONS.onclick, true );
+		cell.appendChild( checkBox );
+		row.appendChild( cell );
+		
+		cell = document.createElement( "TD" );
+		cell.innerHTML = "Color post borders";
+		row.appendChild( cell );
+		optionsSubPane.appendChild( row );
+		
+		row = document.createElement( "TR" );
+		cell = document.createElement( "TD" );
+		checkBox = document.createElement( "INPUT" );
+		checkBox.type = "checkbox";
+		checkBox.id = WFA_OPTIONS.IGNORE_POSTS_ID;
+		
+		var applyIgnoredPostOpacity = WFA.getIgnorePosts();
+		
+		if( applyIgnoredPostOpacity == undefined )
+		{
+			applyIgnoredPostOpacity = 1;
+		}
+		
+		checkBox.checked = applyIgnoredPostOpacity;
+		checkBox.addEventListener('click',WFA_OPTIONS.onclick, true );
+		cell.appendChild( checkBox );
+		row.appendChild( cell );
+		
+		cell = document.createElement( "TD" );
+		cell.innerHTML = "Gray ignored posts";
+		row.appendChild( cell );
+		optionsSubPane.appendChild( row );
+		
+		var button = document.createElement( "INPUT" );
+		button.type = "button";
+		button.addEventListener( 'click', function(){window.location.reload()}, true );
+		button.value = "Reload page";
+		button.style.marginBottom = '5px';
+		button.style.visibility = "hidden";
+		WFA_OPTIONS.reloadButton = button;
+		
+		var wowProgress = document.createElement( "SPAN" );
+		wowProgress.style.fontSize = "8px";
+		wowProgress.innerHTML = 'Powered By: <a href="http://wowprogress.com">WowProgress</a>';
+		
+		optionsPane.appendChild( optionsSubPane );
+		optionsPane.appendChild( button );
+		optionsPane.appendChild( wowProgress );
+		document.body.appendChild( optionsPane );
+		
+		WFA_OPTIONS.optionsPane = optionsPane;
+		
+		document.body.addEventListener('mouseover',WFA_OPTIONS.onmouseout, true );
+	},
+	/**************************************************************
 	 * Event handler for checkbox clicks. Determines action
 	 * by checkbox element ids.
 	 *
 	 * @param (Event) The fired event object
 	 *
 	 **************************************************************/
-    onclick: function( event )
-    {
-        var target = event.target;
-        if( target && target.id == WFA_OPTIONS.COLOR_BORDER_ID )
-        {
-            WFA.setApplyBorderColor( target.checked );
-            WFA_OPTIONS.reloadButton.style.visibility = "visible";
-        }
-        else if( target && target.id == WFA_OPTIONS.IGNORE_POSTS_ID )
-        {
-            WFA.setIgnorePosts( target.checked );
-            WFA_OPTIONS.reloadButton.style.visibility = "visible";
-        }  
-        
-    },
-    /**************************************************************
+	onclick: function( event )
+	{
+		var target = event.target;
+		if( target && target.id == WFA_OPTIONS.COLOR_BORDER_ID )
+		{
+			WFA.setApplyBorderColor( target.checked );
+			WFA_OPTIONS.reloadButton.style.visibility = "visible";
+		}
+		else if( target && target.id == WFA_OPTIONS.IGNORE_POSTS_ID )
+		{
+			WFA.setIgnorePosts( target.checked );
+			WFA_OPTIONS.reloadButton.style.visibility = "visible";
+		}  
+		
+	},
+	/**************************************************************
 	 * Event handler mousing over the WFA Options tab. Opens the
 	 * main options pane.
 	 *
 	 * @param (Event) The fired event object
 	 *
 	 **************************************************************/
-    onmouseover: function( event )
-    {
-        WFA_OPTIONS.show();
-    },
-    /**************************************************************
+	onmouseover: function( event )
+	{
+		WFA_OPTIONS.show();
+	},
+	/**************************************************************
 	 * Event handler for mouse movements on the document body.
 	 *
 	 * @param (Event) The fired event object
 	 *
 	 **************************************************************/
-    onmouseout: function( event )
-    {
-        if( WFA_OPTIONS.isOpen )
-        {
-            var target = event.target;
-            
-            while( target )
-            {
-                if( target == WFA_OPTIONS.optionsPane )
-                {
-                    break;   
-                }
-                else if( target == document.body )
-                {
-                    target = null;
-                    break;   
-                }
-                target = target.parentNode;   
-            }
-            
-            if( !target )
-            {
-                WFA_OPTIONS.hide();
-            }
-        }
-    }
+	onmouseout: function( event )
+	{
+		if( WFA_OPTIONS.isOpen )
+		{
+			var target = event.target;
+			
+			while( target )
+			{
+				if( target == WFA_OPTIONS.optionsPane )
+				{
+					break;   
+				}
+				else if( target == document.body )
+				{
+					target = null;
+					break;   
+				}
+				target = target.parentNode;   
+			}
+			
+			if( !target )
+			{
+				WFA_OPTIONS.hide();
+			}
+		}
+	}
 }
 
 
