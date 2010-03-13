@@ -4,11 +4,10 @@
 // @description    Enhances World of Warcraft NA/EU forums with WoW Progress scores
 // @include        http://forums.worldofwarcraft.com/*
 // @include        http://forums.wow-europe.com/*
+// @require        http://code.jquery.com/jquery-1.4.2.min.js
 // ==/UserScript==
 
-
-
-WFA =
+var WFA =
 {
 	worldThreshold: 100, //not used yet
 	localThreshold: 100, //not used yet
@@ -25,6 +24,7 @@ WFA =
 	COLOR_EPIC: "#A335EE",	//epic HTML hex color (purple), ok to change
 	COLOR_RARE: "#0070DD",	//rare HTML hex color (blue), ok to change
 	COLOR_COMMON: "#1EFF00",	//rare HTML hex color (green), ok to change
+	COLOR_BLUE: "#00C0FF", //blue post border color, ok to change
 	IS_REQUESTING: 1,	//do not change: constant used to denote a requesting status
 	FAILED_REQUEST: 2,	//do not change: constant used to denote a failed request
 	rankCache:{}, //do not change
@@ -341,7 +341,7 @@ WFA =
 		if( WFA.isBluePost( post ) )
 		{
 			var innerBorderElement = WFA.getBorderElement( post );
-			innerBorderElement.style.borderColor = "#00C0FF";
+			innerBorderElement.style.borderColor = WFA.COLOR_BLUE;
 		}
 		else
 		{
@@ -357,6 +357,52 @@ WFA =
 		}
 	}
 }
+
+var WFA_OPTIONS = 
+{
+    built: false,
+    initialize: function()
+    {
+        var handle = document.createElement("DIV");
+        handle.style.position = "fixed";
+        handle.style.width = "100px";
+        handle.style.lineHeight = "10px";
+        handle.style.fontSize = "10px";
+        handle.style.fontFamily = "sans-serif";
+        handle.style.color = "white";
+        handle.style.height = "12px";
+        handle.style.backgroundColor = "black";
+        handle.style.border = "1px solid grey";
+        handle.style.bottom = "0px";
+        handle.style.right = "0px";
+        handle.style.textAlign = "center";
+        handle.innerHTML = "WFA Options";
+        document.body.appendChild( handle );  
+    },
+    show: function()
+    {
+       if( !WFA_OPTIONS.built )
+       {
+            WFA_OPTION.build();
+       }
+       
+    },
+    build: function()
+    {
+        WFA_OPTIONS.built = true;
+    },
+    onmouseover: function( event )
+    {
+        
+    },
+    onmouseout: function( event )
+    {
+        
+    }
+}
+
+
+
 
 //make sure this is a supported forum area
 var area = WFA.getForumArea();
@@ -407,4 +453,3 @@ if( area )
 		WFA.stylePost( noInfo[i], null );
 	}
 }
-
