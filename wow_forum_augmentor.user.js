@@ -2,9 +2,10 @@
 // @name           WoW Forum Augmentor
 // @namespace      WFA
 // @description    Enhances World of Warcraft NA/EU forums with WoW Progress scores
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js
+// @require        http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.2/jquery-ui.min.js
 // @include        http://forums.worldofwarcraft.com/*
 // @include        http://forums.wow-europe.com/*
-// @require        http://code.jquery.com/jquery-1.4.2.min.js
 // ==/UserScript==
 
 var WFA =
