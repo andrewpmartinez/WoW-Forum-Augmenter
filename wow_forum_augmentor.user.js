@@ -162,6 +162,10 @@ var WFA =
 				realmNode.parentNode.parentNode.appendChild( newNode );				
 			}
 	},
+	isChrome: function()
+	{
+	    return navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+	},
 	/**************************************************************
 	 * Requests a guild ranks information from WowProgress.com.
 	 *
@@ -187,35 +191,44 @@ var WFA =
 		guild = guild.replace( /'/g, '-' ).replace( /\s/g, "+");
 		var requestUrl = 'http://www.wowprogress.com/guild/'+area+'/'+realm+'/'+guild+'/json_rank';
 
-		GM_xmlhttpRequest(
+
+        if( WFA.isChrome() )
+        {
+        	chrome.extension.sendRequest({'action' : 'fetchGuildRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, post)});
+        }
+        else
+        {
+
+    		GM_xmlhttpRequest(
+    		{
+    			method: 'GET',
+    			url: requestUrl,
+    			headers: 
+    			{
+    				'Accept': 'text/html,text/javascript,text/json',
+    			},
+    			onload: function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, post)}
+		    });	
+        }
+		
+	},
+	onRequest: function(responseDetails, key, area, realm, guild, post)
+	{
+		
+		var responseObj = WFA.FAILED_REQUEST;
+		
+		if( responseDetails.responseText )
 		{
-			method: 'GET',
-			url: requestUrl,
-			headers: 
-			{
-				'User-agent': 'Mozilla/4.0 (compatible) Greasemonkey',
-				'Accept': 'text/html,text/javascript,text/json',
-			},
-			onload: function(responseDetails)
-			{
-				
-				var responseObj = WFA.FAILED_REQUEST;
-				
-				if( responseDetails.responseText )
-				{
-					eval( "responseObj = " + responseDetails.responseText );
-				}
-				
-				if( !responseObj )
-				{
-					responseObj = WFA.FAILED_REQUEST;	
-				}
-				
-				WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
-				WFA.processPost( area, realm, guild, post );
-				
-			}
-		});	
+			eval( "responseObj = " + responseDetails.responseText );
+		}
+		
+		if( !responseObj )
+		{
+			responseObj = WFA.FAILED_REQUEST;	
+		}
+		
+		WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
+		WFA.processPost( area, realm, guild, post );
 		
 	},
 	/**************************************************************
@@ -320,7 +333,7 @@ var WFA =
 		var world = WFA.getRankColor( info.world_rank );
 		var area = WFA.getRankColor( info.area_rank );
 		var areaText = WFA.getForumArea();
-		return 'World: <span style="color:'+world+'">' + info.world_rank + '<span><BR>'+areaText+': <span style="color:'+area+'>' + info.area_rank + '</span>';
+		return 'World: <span style="color:'+world+'">' + info.world_rank + '<span><BR>'+areaText+': <span style="color:'+area+'">' + info.area_rank + '</span>';
 		
 	},
 	/**************************************************************
@@ -424,9 +437,10 @@ var WFA =
 	 **************************************************************/
 	loadOptions: function()
 	{
-		WFA.setApplyBorderColor( GM_getValue( 'applyColorPostBorder' ) );
-		WFA.setIgnorePosts(GM_getValue( 'applyIgnoredPostOpacity' ) );   
-		
+
+    	WFA.setApplyBorderColor( parseInt(GM_getValue( 'applyColorPostBorder' ) || '0' ) );
+    	WFA.setIgnorePosts( parseInt( GM_getValue( 'applyIgnoredPostOpacity' ) || '1' ) );   
+
 	}
 	
 }
@@ -521,7 +535,7 @@ var WFA_OPTIONS =
 		
 		var applyColorPostBorder = WFA.getApplyBorderColor();
 		
-		if( applyColorPostBorder == undefined )
+		if( typeof( applyColorPostBorder ) == "undefined" )
 		{
 			applyColorPostBorder = 1;
 		}
@@ -543,7 +557,7 @@ var WFA_OPTIONS =
 		
 		var applyIgnoredPostOpacity = WFA.getIgnorePosts();
 		
-		if( applyIgnoredPostOpacity == undefined )
+		if( typeof(applyIgnoredPostOpacity) == "undefined" )
 		{
 			applyIgnoredPostOpacity = 1;
 		}
@@ -563,6 +577,7 @@ var WFA_OPTIONS =
 		button.addEventListener( 'click', function(){window.location.reload()}, true );
 		button.value = "Reload page";
 		button.style.marginBottom = '5px';
+		button.style.display = "block";
 		button.style.visibility = "hidden";
 		WFA_OPTIONS.reloadButton = button;
 		
@@ -647,7 +662,18 @@ var WFA_OPTIONS =
 }
 
 
-
+if( WFA.isChrome() )
+{
+    window.GM_getValue = function( property )
+    {
+        return window.localStorage.getItem(property);
+    };
+    window.GM_setValue = function( property, value)
+    {
+        window.localStorage.setItem(property, value);  
+    };   
+    
+}
 
 //make sure this is a supported forum area
 var area = WFA.getForumArea();
