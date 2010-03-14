@@ -1,0 +1,26 @@
+{
+    "name": "WoW Forum Augmentor",
+    "version": "1.1",
+    "description": "Enhances World of Warcraft NA/EU forums with WoW Progress scores ",
+    "icons": 
+    { 
+        "48":  "icons/icon_48.png",
+        "128": "icons/icon_128.png" 
+    },
+    "permissions": 
+    [
+        "http://www.wowprogress.com/*",
+        "http://forums.worldofwarcraft.com/*",
+        "http://forums.wow-europe.com/*"
+    ],
+    "background_page": "background.html",
+    "content_scripts":
+    [
+        {
+            "matches": ["http://forums.worldofwarcraft.com/*", "http://forums.wow-europe.com/*"],
+            "js": ["wow_forum_augmentor.user.js"],
+            "run_at": "document_end"
+        }
+    ]
+    
+}
