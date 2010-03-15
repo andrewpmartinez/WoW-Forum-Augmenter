@@ -1,5 +1,13 @@
 <html>
     <script>
+        
+    /**
+     * Executes an XHR request to obtain a guild rank information.
+     *
+     * @param (String) requestUrl URL to the guild rank server
+     * @param (Function) callBack A call back function pointer that accepts a xmltHttpResponse like object
+     *
+     **/
     function fetchGuildRank( requestUrl, callBack )
     {
         var xhr = new XMLHttpRequest();
@@ -21,18 +29,24 @@
             xhr.send();
     }
     
-      function onRequest(request, sender, callback) {
-        // Only supports the 'fetchTwitterFeed' method, although this could be
-        // generalized into a more robust RPC system.
-        console.log( request.action );
+    /**
+     * Generic handler for all action requests.
+     *
+     * @request (Object) Object request properties
+     * @sender (Object) The origin of the request
+     * @callback (Function) Call back function pointer
+     *
+     **/
+    function onRequest(request, sender, callback) 
+    {
         if (request.action == 'fetchGuildRank') 
         {
           fetchGuildRank(request.requestUrl, callback);
         }
-      };
-
-      // Wire up the listener.
-      chrome.extension.onRequest.addListener(onRequest);
+    };
+    
+    // Register listener
+    chrome.extension.onRequest.addListener(onRequest);
 
     </script>
 </html>

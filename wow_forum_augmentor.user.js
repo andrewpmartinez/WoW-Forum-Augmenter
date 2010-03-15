@@ -11,7 +11,7 @@ var WFA =
 	worldThreshold: 100, //not used yet
 	localThreshold: 100, //not used yet
 	realmThreshold: 3, //not used yet
-	ignoredPostOpacity: 0.45, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
+	ignoredPostOpacity: 0.5, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
 	applyIgnoredPostOpacity: true, //ok to change, whether posts w/o rank, low rank, or no progression should be greyed out (default=true)
 	applyColorPostBorder: true, //ok to change, whether the border around each post should also be colored (default=true)
 	maxEntryAge: 86400, //ok to change, value in seconds. Maximum length of time any one record should be kept (86400s = 24hrs)
@@ -704,10 +704,10 @@ if( area )
 		
 		if( (guildNode && realmNode)  )
 		{
-			guildNode = WFA.cleanGuildName( guildNode.innerHTML );
-			realmNode = WFA.cleanRealmName( realmNode.innerHTML );
+			var guild = WFA.cleanGuildName( unescape( String(guildNode.href).match( /(\?|&)n=(.*?)(&|$)/ )[2])  );
+			var realm = WFA.cleanRealmName( unescape( String(guildNode.href).match( /(\?|&)r=(.*?)(&|$)/ )[2]) );
 			
-			WFA.processPost( area, realmNode, guildNode, thisPost );
+			WFA.processPost( area, realm, guild, thisPost );
 		}
 		else if( WFA.isBluePost( thisPost ) )
 		{
