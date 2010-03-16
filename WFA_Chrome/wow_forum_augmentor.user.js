@@ -11,8 +11,8 @@ var WFA =
 	worldThreshold: 100, //not used yet
 	localThreshold: 100, //not used yet
 	realmThreshold: 3, //not used yet
-	ignoredPostOpacity: 0.5, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
-	applyIgnoredPostOpacity: true, //ok to change, whether posts w/o rank, low rank, or no progression should be greyed out (default=true)
+	ignoredPostOpacity: 0.45, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
+	applyIgnoredPostOpacity: true, //ok to change, whether posts w/o rank, low rank, or no progression should be grayed out (default=true)
 	applyColorPostBorder: true, //ok to change, whether the border around each post should also be colored (default=true)
 	maxEntryAge: 86400, //ok to change, value in seconds. Maximum length of time any one record should be kept (86400s = 24hrs)
 	maxCacheAge: 86400, //ok to change, value in seconds. Maximum length of time to keep the entire cache (86400s = 24hrs)
@@ -52,7 +52,7 @@ var WFA =
 		return area;
 	},
 	/**************************************************************
-	 * Creates a unique key string for guild from a specifie
+	 * Creates a unique key string for guild from a specific
 	 * locale and realm.
 	 *
 	 * @param (String) area Two digit area locale
@@ -72,27 +72,27 @@ var WFA =
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guildName A WoW guild located in the 
 	 *				 specified area & realm
-	 * @param (HTML Object) An HTML node reference to a forum post
-	 * @todo: Change post to be a callback functor in order to
-	 *		  decouple response behaviour.
+	 * @param (Function) callBack a handler that accepts the guild rank info as a single argument
 	 *
 	 * @returns WFA.IS_REQUEST, WFA.FAILED_REQUEST, or a rank
 	 *			info object: {score:,world_rank,area_rank:}
 	 * 
 	 *
 	 **************************************************************/
-	getGuildRankInfo: function( area, realm, guildName, post )
+	getGuildRankInfo: function( area, realm, guildName, callBack )
 	{
-		if( guildName && realm )
+		if( area && guildName && realm )
 		{
 			var key = WFA.generateGuildRealmKey( area, realm, guildName );
 			//not cached or cache is old
 			if( !WFA.rankCache[key] || ((new Date()) - WFA.rankCache[key].timestamp) > WFA.maxEntryAge )
 			{
-				WFA.requestRank( area, realm, guildName, post );
-				return WFA.IS_REQUESTING;
+				WFA.requestRank( area, realm, guildName, callBack );
 			}
-			return WFA.rankCache[key].value;
+			else
+			{
+				callBack( WFA.rankCache[key].value );
+			}
 		}
 		else
 		{
@@ -174,16 +174,14 @@ var WFA =
 	 * @param (String) realm A WoW realm server name
 	 * @param (String) guild A WoW guild located in the 
 	 *				 specified area & realm
-	 * @param (HTML Object) An HTML node reference to a forum post
+	 * @param (Function) callBack Call back handler that takes a single guildInfo parameter
 	 * 
-	 * @todo: Change post to be a callback functor in order to
-	 *		  decouple response behaviour.
 	 *
 	 * @returns WFA.IS_REQUEST, WFA.FAILED_REQUEST, or a rank
 	 *			info object: {score:,world_rank,area_rank:}
 	 *
 	 **************************************************************/
-	requestRank: function( area, realm, guild, post, onRequest )
+	requestRank: function( area, realm, guild, callBack )
 	{
 		var key = WFA.generateGuildRealmKey( area, realm, guild );
 		area = area.replace( /'/g, '-' ).replace( /\s/g, "+").toLowerCase();;
@@ -194,7 +192,7 @@ var WFA =
 
         if( WFA.isChrome() )
         {
-        	chrome.extension.sendRequest({'action' : 'fetchGuildRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, post)});
+        	chrome.extension.sendRequest({'action' : 'fetchGuildRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, callBack)});
         }
         else
         {
@@ -207,12 +205,25 @@ var WFA =
     			{
     				'Accept': 'text/html,text/javascript,text/json',
     			},
-    			onload: function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, post)}
+    			onload: function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, callBack)}
 		    });	
         }
 		
 	},
-	onRequest: function(responseDetails, key, area, realm, guild, post)
+	/**************************************************************
+	 * Callback handler for guild rank information requests
+	 * or Chrome background responses with a fake response object.
+	 *
+	 *
+	 * @param (Object) responseDetails The fake response object or a real xmlHttpRequest response object
+	 * @param (String) key Unique cache key any responses should be saved to
+	 * @param (String) area The US/EU locale string
+	 * @param (String) realm A realm name of the requested guild
+	 * @param (String) guild A guild name 
+	 * @param (Function) A handler that accepts the guild rank info as single argument
+	 *
+	 **************************************************************/
+	onRequest: function(responseDetails, key, area, realm, guild, callBack)
 	{
 		
 		var responseObj = WFA.FAILED_REQUEST;
@@ -228,7 +239,7 @@ var WFA =
 		}
 		
 		WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
-		WFA.processPost( area, realm, guild, post );
+		callBack( responseObj );
 		
 	},
 	/**************************************************************
@@ -321,7 +332,7 @@ var WFA =
 		
 	},
 	/**************************************************************
-	 * Builds a HTML string of text that can be used to represet
+	 * Builds a HTML string of text that can be used to represent
 	 * a guilds status.
 	 *
 	 * @param (Object) info Guild rank information
@@ -345,30 +356,30 @@ var WFA =
 	 * @param (String) guild A WoW guild located in the 
 	 *				 specified area & realm
 	 * @param (HTML Object) An HTML node reference to a forum post
-	 * 
-	 * @todo: Change post to be a callback functor in order to
-	 *		  decouple response behaviour.
-	 *
-	 *
 	 **************************************************************/
 	processPost: function( area, realm, guild, post )
 	{
-		if( WFA.isBluePost( post ) )
+		if( WFA.isBluePost( post ) && WFA.applyColorPostBorder )
 		{
 			var innerBorderElement = WFA.getBorderElement( post );
 			innerBorderElement.style.borderColor = WFA.COLOR_BLUE;
 		}
 		else
 		{
-			var guildRankInfo = WFA.getGuildRankInfo( area, realm, guild, post );
-			if( guildRankInfo && guildRankInfo != WFA.IS_REQUESTING && guildRankInfo.score )
+			var callBack = function(guildRankInfo)
 			{
-				WFA.stylePost( post, guildRankInfo );	
+				if( guildRankInfo && guildRankInfo != WFA.IS_REQUESTING && guildRankInfo.score )
+				{
+					WFA.stylePost( post, guildRankInfo );	
+				}
+				else if( !guildRankInfo || guildRankInfo == 2 )
+				{
+					WFA.stylePost( post, null );	
+				}	
 			}
-			else if( !guildRankInfo || guildRankInfo == 2 )
-			{
-				WFA.stylePost( post, null );	
-			}
+			
+			WFA.getGuildRankInfo( area, realm, guild, callBack );
+			
 		}
 	},
 	/**************************************************************
@@ -382,18 +393,18 @@ var WFA =
 		if( shouldColor )
 		{
 			WFA.applyColorPostBorder = 1;
-			GM_setValue( 'applyColorPostBorder', 1 ) 
+			WFA.setSavedValue( 'applyColorPostBorder', 1 ) 
 		}
 		else
 		{
 			WFA.applyColorPostBorder = 0;
-			GM_setValue( 'applyColorPostBorder', 0 ) 
+			WFA.setSavedValue( 'applyColorPostBorder', 0 ) 
 		}   
 	},
 	/**************************************************************
-	 * Set the option of whether to grey posts out
+	 * Set the option of whether to gray posts out
 	 *
-	 * @param (Boolean) shouldIgnore To grey posts or not
+	 * @param (Boolean) shouldIgnore To gray posts or not
 	 *
 	 **************************************************************/
 	setIgnorePosts: function( shouldIgnore )
@@ -401,19 +412,19 @@ var WFA =
 		if( shouldIgnore )
 		{
 			WFA.applyIgnoredPostOpacity = 1;
-			GM_setValue( 'applyIgnoredPostOpacity', 1 )
+			WFA.setSavedValue( 'applyIgnoredPostOpacity', 1 )
 		}
 		else
 		{
 			WFA.applyIgnoredPostOpacity = 0;
-			GM_setValue( 'applyIgnoredPostOpacity', 0 )
+			WFA.setSavedValue( 'applyIgnoredPostOpacity', 0 )
 		}   
 	},
 	/**************************************************************
-	 * Return whether post borders are being greyed out to ignore
+	 * Return whether post borders are being grayed out to ignore
 	 * or not.
 	 *
-	 * @returns (Number) 1 greyed 0 not
+	 * @returns (Number) 1 grayed 0 not
 	 *
 	 **************************************************************/
 	getIgnorePosts:function()
@@ -438,11 +449,36 @@ var WFA =
 	loadOptions: function()
 	{
 
-    	WFA.setApplyBorderColor( parseInt(GM_getValue( 'applyColorPostBorder' ) || '0' ) );
-    	WFA.setIgnorePosts( parseInt( GM_getValue( 'applyIgnoredPostOpacity' ) || '1' ) );   
+    	WFA.setApplyBorderColor( parseInt(WFA.getSavedValue( 'applyColorPostBorder' ) || '0' ) );
+    	WFA.setIgnorePosts( parseInt( WFA.getSavedValue( 'applyIgnoredPostOpacity' ) || '1' ) );   
 
+	},
+	/**************************************************************
+	 * Handles restoring values from persistent storage. Done to 
+	 * decouple logic of localStrage vs anything else that might
+	 * be needed in various future supported browsers.
+	 *
+	 * @param (String) property A property name to retrieve
+	 * @returns (String) The string property stored.
+	 *
+	 **************************************************************/
+	getSavedValue: function( property )
+	{
+		return localStorage.getItem( property );	
+	},
+	/**************************************************************
+	 * Handles setting values in persistent storage. Done to 
+	 * decouple logic of localStrage vs anything else that might
+	 * be needed in various future supported browsers.
+	 *
+	 * @param (String) property A property name to retrieve
+	 * @param (String) value A string value to store
+	 *
+	 **************************************************************/
+	setSavedValue: function( property, value )
+	{
+		return localStorage.setItem( property, value );
 	}
-	
 }
 
 var WFA_OPTIONS = 
@@ -512,7 +548,7 @@ var WFA_OPTIONS =
 		var optionsPane = document.createElement("DIV");
 		optionsPane.style.display = "none";
 		optionsPane.style.position = "fixed";
-		optionsPane.style.width = "125px";
+		optionsPane.style.width = "145px";
 		optionsPane.style.lineHeight = "10px";
 		optionsPane.style.fontSize = "10px";
 		optionsPane.style.fontFamily = "sans-serif";
@@ -579,6 +615,7 @@ var WFA_OPTIONS =
 		button.style.marginBottom = '5px';
 		button.style.display = "block";
 		button.style.visibility = "hidden";
+		button.style.marginLeft = '25px';
 		WFA_OPTIONS.reloadButton = button;
 		
 		var wowProgress = document.createElement( "SPAN" );
@@ -662,21 +699,12 @@ var WFA_OPTIONS =
 }
 
 
-if( WFA.isChrome() )
-{
-    window.GM_getValue = function( property )
-    {
-        return window.localStorage.getItem(property);
-    };
-    window.GM_setValue = function( property, value)
-    {
-        window.localStorage.setItem(property, value);  
-    };   
-    
-}
-
-//make sure this is a supported forum area
+//make sure this is a supported forum are else we can't be 
+//sure that CSS class names/DOM hierarchy is compatible.
 var area = WFA.getForumArea();
+
+//Restore previous options, must be done before any processing
+//or options are useless.
 WFA.loadOptions();
 
 if( area )
@@ -686,23 +714,26 @@ if( area )
 	
 	var curPost = posts.iterateNext();
 	var guildNode = '';
-	var realmNode = '';
-	var noInfo = [];
 	var postsArray = [];
 	
 	while( curPost )
 	{
 		postsArray.push( curPost );	
+		//store in a custom array. Had issues w/ a mutating iterators when posts were changed in this loop.
 		curPost = posts.iterateNext();
 	}
 	
 	for( var i = 0; i < postsArray.length; i++ )
 	{
 		var thisPost = postsArray[i];
-		guildNode = WFA.getGuildNode( thisPost );
-		realmNode = WFA.getRealmNode( thisPost );
 		
-		if( (guildNode && realmNode)  )
+		//only need guild node as the URL to the armory will be parsed for
+		//realm and guild name. Previously parsing innerHTML text proved to
+		//be unreliable for long guild names. Longer names would be cut
+		//off at the end and have ellipses (...)
+		guildNode = WFA.getGuildNode( thisPost );
+		
+		if( (guildNode )  )
 		{
 			var guild = WFA.cleanGuildName( unescape( String(guildNode.href).match( /(\?|&)n=(.*?)(&|$)/ )[2])  );
 			var realm = WFA.cleanRealmName( unescape( String(guildNode.href).match( /(\?|&)r=(.*?)(&|$)/ )[2]) );
@@ -715,15 +746,12 @@ if( area )
 		}
 		else
 		{
-			//save no info posts
-			noInfo.push( thisPost );
+			//style no info posts
+			WFA.stylePost( thisPost, null );
 		}	
 	}
-	
-	for( var i = 0; i < noInfo.length; i++ )
-	{
-		WFA.stylePost( noInfo[i], null );
-	}
+
 }
 
+//create & show the options pane
 WFA_OPTIONS.initialize();
