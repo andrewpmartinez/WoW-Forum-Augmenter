@@ -6,7 +6,7 @@
 // @include		http://forums.wow-europe.com/*
 // ==/UserScript==
 
-var WFA_VERSION = "_____14_____";
+var WFA_VERSION = "_____15_____";
 
 
 //Name space for all WoW Forum related operations
@@ -192,9 +192,9 @@ var WFA =
 		area = area.replace( /'/g, '-' ).replace( /\s/g, "+").toLowerCase();;
 		realm = realm.replace( /'/g, '-' ).replace( /\s/g, "-").toLowerCase();
 		guild = guild.replace( /'/g, '-' ).replace( /\s/g, "+");
-		var requestUrl = 'http://www.wowprogress.com/guild/'+area+'/'+realm+'/'+guild+'/json_rank';
-
-
+		var requestUrl = 'http://www.wowprogress.com/guild/'+area+'/'+escape(realm)+'/'+escape(guild)+'/json_rank';
+		console.log( requestUrl );
+		console.log( escape( requestUrl ) );
         if( WFA.isChrome() )
         {
         	chrome.extension.sendRequest({'action' : 'fetchGuildRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, callBack)});
