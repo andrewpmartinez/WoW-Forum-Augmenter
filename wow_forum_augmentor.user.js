@@ -6,6 +6,11 @@
 // @include		http://forums.wow-europe.com/*
 // ==/UserScript==
 
+var WFA_VERSION = "_____14_____";
+
+
+//Name space for all WoW Forum related operations
+//including obtaining rank information and styling posts.
 var WFA =
 {
 	worldThreshold: 100, //not used yet
@@ -14,8 +19,8 @@ var WFA =
 	ignoredPostOpacity: 0.45, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
 	applyIgnoredPostOpacity: true, //ok to change, whether posts w/o rank, low rank, or no progression should be grayed out (default=true)
 	applyColorPostBorder: true, //ok to change, whether the border around each post should also be colored (default=true)
-	maxEntryAge: 86400, //ok to change, value in seconds. Maximum length of time any one record should be kept (86400s = 24hrs)
-	maxCacheAge: 86400, //ok to change, value in seconds. Maximum length of time to keep the entire cache (86400s = 24hrs)
+	maxEntryAge: 86400000, //ok to change, value in miliseconds. Maximum length of time any one record should be kept (86400s = 24hrs)
+	maxCacheAge: 86400000, //ok to change, value in miliseconds. Maximum length of time to keep the entire cache (86400s = 24hrs)
 	MAX_LEGENDARY: 3, //maximum world/region rank for legendary status, ok to change, should be higher than 0 and lower than epic
 	MAX_EPIC: 25, //maximum world/region rank for epic status, ok to change should be higher than legendary & lower than rare
 	MAX_RARE: 500, //maximum world/region rank for rare status, ok to change should be higher than epic
@@ -481,6 +486,8 @@ var WFA =
 	}
 }
 
+
+//Namespace for operations dealing with the GUI options panel
 var WFA_OPTIONS = 
 {
 	//do not change anything here
@@ -553,7 +560,7 @@ var WFA_OPTIONS =
 		optionsPane.style.fontSize = "10px";
 		optionsPane.style.fontFamily = "sans-serif";
 		optionsPane.style.color = "white";
-		optionsPane.style.height = "100px";
+		optionsPane.style.height = "115px";
 		optionsPane.style.backgroundColor = "black";
 		optionsPane.style.border = "1px solid grey";
 		optionsPane.style.bottom = "0px";
@@ -618,12 +625,24 @@ var WFA_OPTIONS =
 		button.style.marginLeft = '25px';
 		WFA_OPTIONS.reloadButton = button;
 		
+		
 		var wowProgress = document.createElement( "SPAN" );
 		wowProgress.style.fontSize = "8px";
 		wowProgress.innerHTML = 'Powered By: <a href="http://wowprogress.com">WowProgress</a>';
 		
 		optionsPane.appendChild( optionsSubPane );
 		optionsPane.appendChild( button );
+		
+		if( !WFA.isChrome() )
+		{
+			var update = document.createElement( "a" );
+			update.href = "#";
+			update.addEventListener( 'click', function(){WFA_UPDATE.checkForUpdate(true)}, true );
+			update.innerHTML = "Check for update?";
+			update.style.display = "block";
+			optionsPane.appendChild( update );
+		}
+		
 		optionsPane.appendChild( wowProgress );
 		document.body.appendChild( optionsPane );
 		
@@ -698,6 +717,151 @@ var WFA_OPTIONS =
 	}
 }
 
+//Namespace for functionality dealing with Grease Monkey script update notification
+var WFA_UPDATE = 
+{
+	LAST_CHECK_PROPERTY: "wfa_lastUpdateCheck", //storage global names
+	LATEST_VERSION_PROPERTY: "wfa_currentVersion",
+	CHECK_INTERVAL: 86400000, //once a day in miliseconds update check frequencey
+	isUpdateNotifyShown: false, //if the update notify is currently shown
+	/**************************************************************
+	 * Checks to see if an update check is currently required by
+	 * checking userscripts.org.
+	 *
+	 * @returns True/false
+	 *
+	 **************************************************************/
+	checkRequired: function()
+	{
+		var isRequired = false;
+		var lastCheck = localStorage.getItem( WFA_UPDATE.LAST_CHECK_PROPERTY );
+		
+		if( lastCheck )
+		{
+			lastCheck = parseInt( lastCheck );	
+			var now = (new Date()).getTime();
+			
+			if( now - lastCheck > WFA_UPDATE.CHECK_INTERVAL )
+			{
+				isRequired = true;	
+			}
+		}
+		else
+		{
+			isRequired = true;
+		}
+		return isRequired;
+	},
+	/**************************************************************
+	 * Checks to see if an update is requied based on cached
+	 * information or a forced user check.
+	 *
+	 * @param (Boolean) forced Whether this is a forced user check and should ignore caches.
+	 *
+	 **************************************************************/
+	checkForUpdate: function( forced )
+	{
+		if( WFA_UPDATE.checkRequired() || forced )
+		{
+			var now = (new Date()).getTime();
+			localStorage.setItem( WFA_UPDATE.LAST_CHECK_PROPERTY, now );
+			var requestUrl = 'http://userscripts.org/scripts/source/70501.user.js';
+			
+    		GM_xmlhttpRequest(
+    		{
+    			method: 'GET',
+    			url: requestUrl,
+    			headers: 
+    			{
+    				'Accept': 'text/html,text/javascript,text/json',
+    			},
+    			onload: function(response){WFA_UPDATE.onCheckRequest(response, forced)}
+		    });	
+		}
+		else
+		{
+			
+			var latestVersion = parseInt( localStorage.getItem( WFA_UPDATE.LATEST_VERSION_PROPERTY ) );
+			var curVersion = parseInt( WFA_VERSION.replace( /_/g, '' ) );
+			
+			if( latestVersion && latestVersion != NaN && latestVersion > curVersion )
+			{
+				WFA_UPDATE.notifyUpdate();
+			}
+			else if( forced )
+			{
+				alert( 'No updates' );
+			}
+			
+				
+		}
+		
+	},
+	/**************************************************************
+	 * Displays a notification div w/ install link
+	 *
+	 **************************************************************/
+	notifyUpdate:function()
+	{
+		if( !WFA_UPDATE.isUpdateNotifyShown )
+		{
+			WFA_UPDATE.isUpdateNotifyShown = true;
+			var div = document.createElement( "DIV" );
+
+			div.style.position = "fixed";
+			div.style.width = "300px";
+			div.style.lineHeight = "10px";
+			div.style.fontSize = "10px";
+			div.style.fontFamily = "sans-serif";
+			div.style.color = "white";
+			div.style.height = "12px";
+			div.style.backgroundColor = "black";
+			div.style.border = "1px solid grey";
+			div.style.bottom = "0px";
+			div.style.right = "125px";
+			div.style.textAlign = "center";
+			div.style.zIndex = 1;
+			div.innerHTML = "WFA Options";
+			
+			div.innerHTML = 'An update is available, click <a href="http://userscripts.org/scripts/source/70501.user.js">here</a> to install';
+			document.body.appendChild( div );
+		}
+	},
+	/**************************************************************
+	 * Callback handler for userscripts.org checks. Parses
+	 * out the version on the site and compares to the locally
+	 * defined value.
+	 *
+	 * @param (Object) xmlHttpRequest response object
+	 * @param (Boolean) forced If this was a user forced check
+	 **************************************************************/
+	onCheckRequest:function( response, forced )
+	{
+		if( response && response.responseText )
+		{
+			var curVersion = parseInt( WFA_VERSION.replace( /_/g, '' ));
+            var matches = response.responseText.match( /^var WFA_VERSION = "_____(\d+)_____";$/m );
+            if( matches )
+            {
+            	var matchedVersion = parseInt( matches[1] );
+            	if( matchedVersion && matchedVersion != NaN )
+            	{
+            		localStorage.setItem( WFA_UPDATE.LATEST_VERSION_PROPERTY, matchedVersion );
+	            	if( matchedVersion > curVersion )
+	            	{
+	            		WFA_UPDATE.notifyUpdate();	
+	            	}
+	            	else if( forced )
+					{
+						alert( 'No updates' );
+					}
+	            }
+            }
+		}
+	}	
+}
+
+
 
 //make sure this is a supported forum are else we can't be 
 //sure that CSS class names/DOM hierarchy is compatible.
@@ -753,5 +917,11 @@ if( area )
 
 }
 
+
 //create & show the options pane
 WFA_OPTIONS.initialize();
+
+if( !WFA.isChrome() )
+{
+	WFA_UPDATE.checkForUpdate();
+}
