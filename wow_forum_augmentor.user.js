@@ -8,7 +8,6 @@
 
 var WFA_VERSION = "_____17_____";
 
-
 //Name space for all WoW Forum related operations
 //including obtaining rank information and styling posts.
 var WFA =
