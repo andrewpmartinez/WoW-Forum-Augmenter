@@ -6,7 +6,7 @@
 // @include		http://forums.wow-europe.com/*
 // ==/UserScript==
 
-var WFA_VERSION = "_____15_____";
+var WFA_VERSION = "_____17_____";
 
 
 //Name space for all WoW Forum related operations
@@ -19,8 +19,7 @@ var WFA =
 	ignoredPostOpacity: 0.45, //ok to change, the % oppacity to apply to ignored posts. Values are 0->1 (0 = 0% invisible, 1 = 100% no change, 50% = half transparent.
 	applyIgnoredPostOpacity: true, //ok to change, whether posts w/o rank, low rank, or no progression should be grayed out (default=true)
 	applyColorPostBorder: true, //ok to change, whether the border around each post should also be colored (default=true)
-	maxEntryAge: 86400000, //ok to change, value in miliseconds. Maximum length of time any one record should be kept (86400s = 24hrs)
-	maxCacheAge: 86400000, //ok to change, value in miliseconds. Maximum length of time to keep the entire cache (86400s = 24hrs)
+	maxEntryAge: 86400000, //ok to change, value in miliseconds. Maximum length of time any one record should be kept (86400000ms = 86400s = 24hrs)
 	MAX_LEGENDARY: 3, //maximum world/region rank for legendary status, ok to change, should be higher than 0 and lower than epic
 	MAX_EPIC: 25, //maximum world/region rank for epic status, ok to change should be higher than legendary & lower than rare
 	MAX_RARE: 500, //maximum world/region rank for rare status, ok to change should be higher than epic
@@ -31,6 +30,7 @@ var WFA =
 	COLOR_BLUE: "#00C0FF", //blue post border color, ok to change
 	IS_REQUESTING: 1, //do not change: constant used to denote a requesting status
 	FAILED_REQUEST: 2,//do not change: constant used to denote a failed request
+	RANK_PROPERTY: "wfa_rankCache",
 	rankCache:{}, //do not change
 	
 	/**************************************************************
@@ -55,6 +55,35 @@ var WFA =
 			area = 'US';
 		}
 		return area;
+	},
+	/**************************************************************
+	 * Before the current page unloads, save the current
+	 * guild rank cache to be used on subsequent pages.
+	 *
+	 **************************************************************/
+	saveCache: function()
+	{
+		var json = JSON.stringify( WFA.rankCache );
+		localStorage.setItem( WFA.RANK_PROPERTY, json );
+	},
+	/**************************************************************
+	 * Restores the previously saved cache or initializes it to 
+	 * an empty hash.
+	 *
+	 **************************************************************/	
+	restoreCache: function()
+	{
+		var json = localStorage.getItem( WFA.RANK_PROPERTY );
+		if( json )
+		{
+			json = JSON.parse( json );	
+			if( typeof( json ) != 'object' || json === null )
+			{
+				json = {};	
+			}
+		}
+		WFA.rankCache = json;
+		
 	},
 	/**************************************************************
 	 * Creates a unique key string for guild from a specific
@@ -193,8 +222,7 @@ var WFA =
 		realm = realm.replace( /'/g, '-' ).replace( /\s/g, "-").toLowerCase();
 		guild = guild.replace( /'/g, '-' ).replace( /\s/g, "+");
 		var requestUrl = 'http://www.wowprogress.com/guild/'+area+'/'+escape(realm)+'/'+escape(guild)+'/json_rank';
-		console.log( requestUrl );
-		console.log( escape( requestUrl ) );
+
         if( WFA.isChrome() )
         {
         	chrome.extension.sendRequest({'action' : 'fetchGuildRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, callBack)});
@@ -858,7 +886,7 @@ var WFA_UPDATE =
 	            }
             }
 		}
-	}	
+	}
 }
 
 
@@ -870,6 +898,11 @@ var area = WFA.getForumArea();
 //Restore previous options, must be done before any processing
 //or options are useless.
 WFA.loadOptions();
+
+
+WFA.restoreCache();
+
+window.addEventListener( "beforeunload", WFA.saveCache, true );
 
 if( area )
 {
