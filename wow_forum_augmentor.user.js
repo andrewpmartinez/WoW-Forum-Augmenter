@@ -31,6 +31,12 @@ var WFA =
 	FAILED_REQUEST: 2,//do not change: constant used to denote a failed request
 	RANK_PROPERTY: "wfa_rankCache",
 	rankCache:{}, //do not change
+	PVP_REQUEST_TIMEOUT:2000,
+	lastPvpRequest:0,
+	pvpTimeout:null,
+	requestPvP:false, //careful turning this on can get you a 12hr ban from wowarmory.com
+	MAX_CACHE_ENTRIES: 10000, //if localStorage is UTF-16 this is a very conservative guess to stay under the 5mb limit of storage
+	pvpRequestQueue:[],
 	
 	/**************************************************************
 	 * Returns the two digit forum area/locale of the current 
@@ -55,6 +61,7 @@ var WFA =
 		}
 		return area;
 	},
+	keys: function(o){ var a = []; for (var k in o) a.push(k); return a; },
 	/**************************************************************
 	 * Before the current page unloads, save the current
 	 * guild rank cache to be used on subsequent pages.
@@ -81,6 +88,26 @@ var WFA =
 				json = {};	
 			}
 		}
+		
+		var cacheSize = WFA.keys(json).length;
+
+		if( cacheSize >= WFA.MAX_CACHE_ENTRIES )
+		{
+			var now = (new Date()).getTime();
+			var oldest = now - WFA.maxEntryAge;
+			
+			for( record in json )
+			{
+				delete( json[record] );	
+			}
+			//if still over limit, give up and wipe it.
+			cacheSize = WFA.keys(json).length;
+			if( cacheSize >= WFA.MAX_CACHE_ENTRIES )
+			{
+				json = {};
+			}
+		}
+		
 		WFA.rankCache = json;
 		
 	},
@@ -97,6 +124,10 @@ var WFA =
 	generateGuildRealmKey: function( area, realm, guild )
 	{
 		return String(area + "_" + realm + "_" + guild).toLowerCase();
+	},
+	generatePlayerKey: function( area, realm, player )
+	{
+		return String( 'p_' + area + "_" + realm + "_" + player).toLowerCase();
 	},
 	/**************************************************************
 	 * Attempts to retrieve a guilds rank information.
@@ -130,6 +161,137 @@ var WFA =
 		else
 		{
 			return null;	
+		}
+	},
+	getPvpRankInfo: function( area, realm, name, callBack )
+	{
+		if( area && realm && name )
+		{
+			var key = WFA.generatePlayerKey( area, realm, player );
+			
+			if( (!WFA.rankCache[key] || ((new Date()) - WFA.rankCache[key].timestamp) > WFA.maxEntryAge) )
+			{
+				WFA.requestPvpRank( area, realm, player, callBack );
+			}
+			else
+			{
+				callBack( WFA.rankCache[key].value );
+			}
+		}
+		
+	},
+	startPvpRequestPoll:function()
+	{
+		if( !WFA.pvpTimeout )
+		{
+			WFA.pvpTimeout = setTimeout( WFA.pvpRequestTimout, WFA.PVP_REQUEST_TIMEOUT );
+		}
+	},
+	pvpRequestTimout:function()
+	{
+		WFA.pvpTimeout = null;
+		WFA.doNextPvpRequest();
+		
+		if( WFA.hasQueuedPvpRequest() )
+		{
+			WFA.startPvpRequestPoll();
+		}
+	},
+	requestPvpRank: function( area, realm, player, callBack )
+	{
+		var now = (new Date()).getTime();
+		if( !WFA.lastPvpRequest || now - WFA.lastPvpRequest > WFA.PVP_REQUEST_TIMEOUT )
+		{
+			WFA.lastPvpRequest = now;
+			var key = WFA.generatePlayerKey( area, realm, player );
+	
+			var requestUrl = '';
+			
+			if( area == 'US' )
+			{
+				requestUrl = "http://www.wowarmory.com/character-sheet.xml?";
+			}else if( area == 'EU' )
+			{
+				requestUrl = "http://eu.wowarmory.com/character-sheet.xml?";
+			}
+	
+			requestUrl = requestUrl + 'r='+escape(realm)+'&cn='+escape(player) + '&rhtml=n';
+	
+	        if( WFA.isChrome() )
+	        {
+	        	chrome.extension.sendRequest({'action' : 'fetchPvpRank', 'requestUrl':requestUrl}, function(responseDetails){WFA.onRequest( responseDetails, key,area, realm, guild, callBack)});
+	        }
+	        else
+	        {
+				console.log( 'Requesting pvp info' );
+	    		GM_xmlhttpRequest(
+	    		{
+	    			method: 'GET',
+	    			url: requestUrl,
+	    			headers: 
+	    			{
+	    				'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2) Gecko/20100115 Firefox/3.6',
+	    				'Accept': 'application/xml;charset=UTF-8,application/xml,text/xml',
+	    			},
+	    			onload: function(responseDetails){WFA.onPvpRequest( responseDetails, key,area, realm, player, callBack)}
+			    });	
+	        }
+		}
+		else
+		{
+			var request = function(){WFA.requestPvpRank( area, realm, player, callBack )};
+			WFA.pvpRequestQueue.push( request );
+			WFA.startPvpRequestPoll();
+		}
+	},
+	hasQueuedPvpRequest:function()
+	{
+		return WFA.pvpRequestQueue.length > 0;	
+	},
+	doNextPvpRequest:function()
+	{
+		if( WFA.hasQueuedPvpRequest() )
+		{
+			var request = WFA.pvpRequestQueue.pop();
+			request();
+		}	
+	},
+	onPvpRequest: function(responseDetails, key,area, realm, player, callBack )
+	{
+		
+		if( responseDetails.responseText )
+		{
+			var pvpRanks = {2:{},3:{},5:{}};
+			var parser = new DOMParser();
+			
+			if( !responseDetails.responseText.match( /_layout\/error\/error.xsl/ ) )
+			{
+				try
+				{
+					var doc = parser.parseFromString(responseDetails.responseText,"text/xml");
+					
+					var rankNodes = doc.evaluate( "//arenaTeam", doc, null, XPathResult.ANY_TYPE, null );
+					
+					var curRank = rankNodes.iterateNext();
+
+					while( curRank )
+					{
+						pvpRanks[curRank.getAttribute("teamSize")] = {rating:curRank.getAttribute("rating"),rank:curRank.getAttribute("ranking"),url:curRank.getAttribute("teamUrl")};
+						curRank = rankNodes.iterateNext();	
+					}
+
+					WFA.rankCache[key] = {value: pvpRanks, timestamp:(new Date()).getTime() };
+					
+					if( typeof(callBack) == 'function' )
+					{
+						callBack( pvpRanks );
+					}
+				}
+				catch(e)
+				{
+					//...banned from wowarmory?
+				}
+			}
 		}
 	},
 	/**************************************************************
@@ -167,32 +329,35 @@ var WFA =
 	 * @param (Object) rankInfo A rank info object
 	 *
 	 **************************************************************/
-	stylePost: function( post, rankInfo )
+	stylePost: function( post, rankInfo, pvpRankInfo )
 	{
 		
-			if( !rankInfo || (rankInfo.world > WFA.worldThreshold && rank.info && rankInfo.local > WFA.localThreshold && rankInfo.realm > WFA.realmThreshold ) )
+			if( !rankInfo || !rankInfo.score || (rankInfo.world > WFA.worldThreshold && rank.info && rankInfo.local > WFA.localThreshold && rankInfo.realm > WFA.realmThreshold ) )
 			{
 				if( WFA.applyIgnoredPostOpacity )
 				{
 					post.style.opacity = WFA.ignoredPostOpacity;
 				}
 			}
-			else
+			
+			
+			var realmNode = WFA.getRealmNode( post );
+			
+			if( realmNode )
 			{
-				var realmNode = WFA.getRealmNode( post );
 				var newNode = document.createElement( "DIV");
 				newNode.style.color = "#CCCCCC";
 				
-				if( WFA.applyColorPostBorder )
+				if( WFA.applyColorPostBorder && rankInfo && rankInfo.score )
 				{
 					var minRank = Math.min( rankInfo.world_rank, rankInfo.area_rank );
 					var borderColor = WFA.getRankColor( minRank );
 					var innerBorderElement = WFA.getBorderElement( post );
 					innerBorderElement.style.borderColor = borderColor;
 				}
-
-				newNode.innerHTML = WFA.buildRankText( rankInfo );
-				realmNode.parentNode.parentNode.appendChild( newNode );				
+	
+				newNode.innerHTML = WFA.buildRankText( rankInfo, pvpRankInfo );
+				realmNode.parentNode.parentNode.appendChild( newNode );	
 			}
 	},
 	isChrome: function()
@@ -228,7 +393,7 @@ var WFA =
         }
         else
         {
-
+			console.log('Requesting guild info' );
     		GM_xmlhttpRequest(
     		{
     			method: 'GET',
@@ -258,7 +423,7 @@ var WFA =
 	onRequest: function(responseDetails, key, area, realm, guild, callBack)
 	{
 		
-		var responseObj = WFA.FAILED_REQUEST;
+		var responseObj = {"score":"","world_rank":"","area_rank":"","realm_rank":""};
 		
 		if( responseDetails.responseText )
 		{
@@ -271,7 +436,11 @@ var WFA =
 		}
 		
 		WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
-		callBack( responseObj );
+		
+		if( typeof(callBack) == 'function' )
+		{
+			callBack( responseObj );
+		}
 		
 	},
 	/**************************************************************
@@ -288,6 +457,11 @@ var WFA =
 	{
 		var guildNode = document.evaluate( ".//li[@class='icon-guild']/small/b/a", post,null, XPathResult.ANY_TYPE, null );
 		return guildNode.iterateNext();
+	},
+	getPlayerNode: function( post )
+	{
+		var playerNode = document.evaluate( ".//div[@class='chardata']/span/b/a", post,null, XPathResult.ANY_TYPE, null );
+		return playerNode.iterateNext();
 	},
 	/**************************************************************
 	 * Returns the HTML element that contains a post's realm 
@@ -347,20 +521,26 @@ var WFA =
 	 **************************************************************/
 	getRankColor: function( rank )
 	{
-		if( rank <= WFA.MAX_LEGENDARY )
+		rank = parseInt( rank );
+		if( !isNaN(rank) )
 		{
-			return WFA.COLOR_LEGENDARY;
+			if( rank <= WFA.MAX_LEGENDARY )
+			{
+				return WFA.COLOR_LEGENDARY;
+			}
+			else if( rank <= WFA.MAX_EPIC )
+			{
+				return WFA.COLOR_EPIC;
+			}
+			else if( rank <= WFA.MAX_RARE )
+				return WFA.COLOR_RARE;
+			else
+			{
+				return WFA.COLOR_COMMON;
+			}
 		}
-		else if( rank <= WFA.MAX_EPIC )
-		{
-			return WFA.COLOR_EPIC;
-		}
-		else if( rank <= WFA.MAX_RARE )
-			return WFA.COLOR_RARE;
-		else
-		{
-			return WFA.COLOR_COMMON;
-		}
+		
+		return '';
 		
 	},
 	/**************************************************************
@@ -371,12 +551,31 @@ var WFA =
 	 * @returns (String) A string of HTML text
 	 *
 	 **************************************************************/
-	buildRankText: function( info )
+	buildRankText: function( info, pvpInfo )
 	{
+		info = info || {world_rank:null,area_rank:null,score:null,realm:null};
+		pvpInfo = pvpInfo || {2:{}, 3:{}, 5:{} };
 		var world = WFA.getRankColor( info.world_rank );
 		var area = WFA.getRankColor( info.area_rank );
+		var realm = WFA.getRankColor( info.realm_rank );
+		var twoColor = WFA.getRankColor( pvpInfo[2].rank )
+		var threeColor = WFA.getRankColor( pvpInfo[3].rank );
+		var fiveColor = WFA.getRankColor( pvpInfo[5].rank )
+		
+		var worldRank = parseInt( info.world_rank ) || '-';
+		var areaRank = parseInt( info.area_rank ) || '-';
+		var realmRank = parseInt( info.realm_rank ) || '-';
+		
+		var twoRank = parseInt( pvpInfo[2].rank ) || '-';
+		var threeRank = parseInt( pvpInfo[3].rank ) || '-';
+		var fiveRank = parseInt( pvpInfo[5].rank ) || '-';
+		
 		var areaText = WFA.getForumArea();
-		return 'World: <span style="color:'+world+'">' + info.world_rank + '<span><BR>'+areaText+': <span style="color:'+area+'">' + info.area_rank + '</span>';
+		
+		return '<table style="text-align:right;display:inline;padding:0px;font-size:7pt"><tr><td style="padding:0px;" >World</td><td style="padding:0px 5px 0px 2px;" ><span style="color:'+world+'">' + worldRank + '</span></td><td style="padding:0px;" >2v2</td><td style="color:'+ twoColor+';padding:0px 5px 0px 2px;" >'+ twoRank +'</td></tr>' +
+'<tr><td style="padding:0px;" >'+areaText+'</td><td style="padding:0px 5px 0px 2px;" ><span style="color:'+area+'">' + areaRank + '</span></td><td style="padding:0px;" >3v3</td><td style="color:'+ threeColor+';padding:0px 5px 0px 2px;" >'+ threeRank +'</td></tr>' +
+'<tr><td style="padding:0px;" >Realm</td><td style="padding:0px 5px 0px 2px;" ><span style="color:'+realm+'">' + realmRank + '</span></td><td style="padding:0px;" >5v5</td><td style="color:'+ fiveColor+';padding:0px 5px 0px 2px;" >'+ fiveRank +'</td></tr></table>';
+
 		
 	},
 	/**************************************************************
@@ -389,7 +588,7 @@ var WFA =
 	 *				 specified area & realm
 	 * @param (HTML Object) An HTML node reference to a forum post
 	 **************************************************************/
-	processPost: function( area, realm, guild, post )
+	processPost: function( area, realm, guild, player, post )
 	{
 		if( WFA.isBluePost( post ) && WFA.applyColorPostBorder )
 		{
@@ -400,18 +599,20 @@ var WFA =
 		{
 			var callBack = function(guildRankInfo)
 			{
-				if( guildRankInfo && guildRankInfo != WFA.IS_REQUESTING && guildRankInfo.score )
+				if( WFA.requestPvP )
 				{
-					WFA.stylePost( post, guildRankInfo );	
+					WFA.getPvpRankInfo( area, realm, player, function(pvpRank)
+					{
+						WFA.stylePost( post, guildRankInfo, pvpRank );	
+					} );
 				}
-				else if( !guildRankInfo || guildRankInfo == 2 )
+				else
 				{
-					WFA.stylePost( post, null );	
-				}	
+					WFA.stylePost( post, guildRankInfo, null );	
+				}
 			}
 			
 			WFA.getGuildRankInfo( area, realm, guild, callBack );
-			
 		}
 	},
 	/**************************************************************
@@ -910,6 +1111,7 @@ if( area )
 	
 	var curPost = posts.iterateNext();
 	var guildNode = '';
+	var playerNode = '';
 	var postsArray = [];
 	
 	while( curPost )
@@ -928,13 +1130,14 @@ if( area )
 		//be unreliable for long guild names. Longer names would be cut
 		//off at the end and have ellipses (...)
 		guildNode = WFA.getGuildNode( thisPost );
-		
+		playerNode = WFA.getPlayerNode( thisPost );
 		if( (guildNode )  )
 		{
-			var guild = WFA.cleanGuildName( unescape( String(guildNode.href).match( /(\?|&)n=(.*?)(&|$)/ )[2])  );
+			var guild = WFA.cleanGuildName( unescape( String(guildNode.href).match( /(\?|&)n=(.*?)(&|$)/ )[2]) );
 			var realm = WFA.cleanRealmName( unescape( String(guildNode.href).match( /(\?|&)r=(.*?)(&|$)/ )[2]) );
-			
-			WFA.processPost( area, realm, guild, thisPost );
+			var player = unescape( String(playerNode.href).match( /(\?|&)n=(.*?)(&|$)/ )[2] );
+
+			WFA.processPost( area, realm, guild, player, thisPost );
 		}
 		else if( WFA.isBluePost( thisPost ) )
 		{
@@ -957,3 +1160,20 @@ if( !WFA.isChrome() )
 {
 	WFA_UPDATE.checkForUpdate();
 }
+
+
+
+GM_xmlhttpRequest(
+{
+	method: 'GET',
+	url: 'http://www.wowprogress.com/export/ranks/us_mal-ganis_tier10_25.json.gz',
+	headers: 
+	{
+		'Accept': 'text/html,text/javascript,text/json,application-json/text',
+		'Accept-Encoding': 'gzip,deflate'
+	},
+	onload: function(response){console.log( response.responseText);}
+});	
+
+
+//http://www.wowprogress.com/export/ranks/us_mal-ganis_tier10_25.json.gz
