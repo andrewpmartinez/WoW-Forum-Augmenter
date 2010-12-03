@@ -1,4 +1,4 @@
-WFA// ==UserScript==
+// ==UserScript==
 // @name		WoW Forum Augmentor
 // @namespace	WFA
 // @description	Enhances World of Warcraft NA/EU forums with WoW Progress scores
