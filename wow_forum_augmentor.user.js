@@ -1,6 +1,6 @@
 WFA// ==UserScript==
-// @name		   WoW Forum Augmentor
-// @namespace	  WFA
+// @name		WoW Forum Augmentor
+// @namespace	WFA
 // @description	Enhances World of Warcraft NA/EU forums with WoW Progress scores
 // @include		http://forums.worldofwarcraft.com/*
 // @include		http://forums.wow-europe.com/*
@@ -8,16 +8,30 @@ WFA// ==UserScript==
 // @include		http://eu.battle.net/wow/en/forum/topic/*
 // ==/UserScript==
 
-var WFA_VERSION = "_____17_____";
+var WFA_VERSION = "_____18_____";
 
 var GUILD_LINK_PARSER = /\?r=(.*?)&gn=(.*?)(&|$)/;
 
 
+/**************************************************************
+ * It is what it is.
+ **************************************************************/
 function emptyFunction(){}
 
+/**************************************************************
+ * Copies properties/methods into a child from
+ * a parent object definition. Methods/properties
+ * that are not already overriden in the child are
+ * added.
+ *
+ * @param (Object) A child object definition
+ * @param (Object) The source definition to copy from
+ * @result (Object) modified child object
+ *
+ **************************************************************/
 function extend( child, parent )
 {
-	for( prop in parent.prototype )
+	for( prop in parent )
 	{
 		if( !(prop in child ) && prop != 'prototype' )
 		{
@@ -34,6 +48,23 @@ function extend( child, parent )
 	}
 }
 
+/**************************************************************
+ * Creates a class object from a standard object. Objects will
+ * call their own internal constructor at obj.prototype.init.
+ * If prototype.init does not exist, it will be assigned an
+ * empty constructor.
+ *
+ * The original class object is not modified as a new object 
+ * is generated
+ *
+ * @param (Object) obj A class object definition
+ * @param (Object) ... All extra arguments are assumed to be 
+ *                     parent/mixin objects that are extened
+ *                     to the new class.
+ * @return (Object) A new class object definition
+ * 
+ *
+ **************************************************************/
 function classify( obj )
 {
 	
@@ -59,11 +90,26 @@ function classify( obj )
 	return returnObj;
 }
 
+/**************************************************************
+ * Returns true if the given HTML node reference has
+ * all of the class names supplied.
+ *
+ * @param (Html Node) node An html node
+ * @param (String) ... All other arguments are assumed
+ *                     to be class names to check against.
+ *
+ * @return (Boolean) True if all class names are present
+ *                   in node.className
+ *
+ **************************************************************/
 function hasClass( node )
 {
 	var retVal = false;
 	if( node && node.className )
 	{
+		//store a computed usable hash for future lookups
+		//use the unparsed className string as a ref to
+		//know when the cumpted hash is useless
 		if( !node._classHash || !node._parsedClass == node.className )
 		{
 			node._classHash = {};
@@ -83,9 +129,18 @@ function hasClass( node )
 			}
 		}
 	}
+	
 	return retVal;
 }
 
+/**************************************************************
+ * New Battle.net forums are xhtml and require a namespace
+ * resolver for xpath queries.
+ *
+ * @param (String) prefix An XML namespace (e.g. 'xsd:, x:, html:)
+ * @return (String) The corresponding xml schema
+ *
+ **************************************************************/
 var nameSpaceResolver = function(prefix) 
 {
     return prefix === 'x' ? 'http://www.w3.org/1999/xhtml' : null;
@@ -110,6 +165,11 @@ var WFA =
 	COLOR_RARE: "#0070DD", //rare HTML hex color (blue), ok to change
 	COLOR_COMMON: "#1EFF00", //rare HTML hex color (green), ok to change
 	COLOR_BLUE: "#00C0FF", //blue post border color, ok to change
+	COLOR_EPIC_BORDER: "#601F8C", //epic HTML hex color (purple), ok to change
+	COLOR_RARE_BORDER: "#00478C", //rare HTML hex color (blue), ok to change
+	COLOR_COMMON_BORDER: "#118C00", //rare HTML hex color (green), ok to change
+	COLOR_BLUE_BORDER: "#006A8C", //blue post border color, ok to change
+
 	IS_REQUESTING: 1, //do not change: constant used to denote a requesting status
 	FAILED_REQUEST: 2,//do not change: constant used to denote a failed request
 	RANK_PROPERTY: "wfa_rankCache",
@@ -148,8 +208,9 @@ var WFA =
 		return area;
 	},
 	/********************************************************
+	 * Returns all posts for the current forums page.
 	 *
-	 *
+	 * @return (Array) An array of HTML node elements
 	 *
 	 *******************************************************/
 	getPosts: function()
@@ -265,7 +326,7 @@ var WFA =
 		}
 		else
 		{
-			return null;	
+			callBack( null );
 		}
 	},
 	isChrome: function()
@@ -369,7 +430,31 @@ var WFA =
 		{
 			return WFA.COLOR_COMMON;
 		}
-		
+	},
+	/**************************************************************
+	 * Returns the color that a world/area ranks should be colored
+	 * as for borders.
+	 *
+	 * @param (Number) rank The rank the color
+	 * @returns (String) A HTML hex string color
+	 *
+	 **************************************************************/
+	getRankBorderColor: function( rank )
+	{
+		if( rank <= WFA.MAX_LEGENDARY )
+		{
+			return WFA.COLOR_LEGENDARY_BORDER;
+		}
+		else if( rank <= WFA.MAX_EPIC )
+		{
+			return WFA.COLOR_EPIC_BORDER;
+		}
+		else if( rank <= WFA.MAX_RARE )
+			return WFA.COLOR_RARE_BORDER;
+		else
+		{
+			return WFA.COLOR_COMMON_BORDER;
+		}
 	},
 	/**************************************************************
 	 * Set the option of whether to apply border colors or not.
@@ -377,7 +462,7 @@ var WFA =
 	 * @param (Boolean) shouldColor To add colored borders or not
 	 *
 	 **************************************************************/
-	enableBorderColor: function( enabled )
+	toggleBorderColor: function( enabled )
 	{
 		if( enabled )
 		{
@@ -396,7 +481,7 @@ var WFA =
 	 * @param (Boolean) shouldIgnore To gray posts or not
 	 *
 	 **************************************************************/
-	enableIgnorePosts: function( shouldIgnore )
+	toggleIgnorePosts: function( shouldIgnore )
 	{
 		if( shouldIgnore )
 		{
@@ -416,7 +501,7 @@ var WFA =
 	 * @returns (Number) 1 grayed 0 not
 	 *
 	 **************************************************************/
-	getIgnorePosts:function()
+	isIgnorePostsEnabled:function()
 	{
 		return WFA.applyIgnoredPostOpacity;
 	},
@@ -426,7 +511,7 @@ var WFA =
 	 * @returns (Number) 1 colored 0 not colored
 	 *
 	 **************************************************************/
-	getApplyBorderColor:function()
+	isApplyBorderColorEnabled:function()
 	{
 		return WFA.applyColorPostBorder;   
 	},
@@ -438,8 +523,8 @@ var WFA =
 	loadOptions: function()
 	{
 
-    	WFA.enableBorderColor( parseInt(WFA.getSavedValue( 'applyColorPostBorder' ) || '0' ) );
-    	WFA.enableIgnorePosts( parseInt( WFA.getSavedValue( 'applyIgnoredPostOpacity' ) || '1' ) );   
+    	WFA.toggleBorderColor( parseInt(WFA.getSavedValue( 'applyColorPostBorder' ) || '0' ) );
+    	WFA.toggleIgnorePosts( parseInt( WFA.getSavedValue( 'applyIgnoredPostOpacity' ) || '1' ) );   
 
 	},
 	/**************************************************************
@@ -487,7 +572,7 @@ var WFA_OPTIONS =
 	 **************************************************************/
 	initialize: function()
 	{
-		var handle = document.createElement("DIV");
+		var handle = document.createElement("div");
 		handle.style.position = "fixed";
 		handle.style.width = "100px";
 		handle.style.lineHeight = "10px";
@@ -560,7 +645,7 @@ var WFA_OPTIONS =
 		checkBox.type = "checkbox";
 		checkBox.id = WFA_OPTIONS.COLOR_BORDER_ID;
 		
-		var applyColorPostBorder = WFA.getApplyBorderColor();
+		var applyColorPostBorder = WFA.isApplyBorderColorEnabled();
 		
 		if( typeof( applyColorPostBorder ) == "undefined" )
 		{
@@ -582,7 +667,7 @@ var WFA_OPTIONS =
 		checkBox.type = "checkbox";
 		checkBox.id = WFA_OPTIONS.IGNORE_POSTS_ID;
 		
-		var applyIgnoredPostOpacity = WFA.getIgnorePosts();
+		var applyIgnoredPostOpacity = WFA.isIgnorePostsEnabled();
 		
 		if( typeof(applyIgnoredPostOpacity) == "undefined" )
 		{
@@ -594,12 +679,12 @@ var WFA_OPTIONS =
 		cell.appendChild( checkBox );
 		row.appendChild( cell );
 		
-		cell = document.createElement( "TD" );
+		cell = document.createElement( "td" );
 		cell.innerHTML = "Gray ignored posts";
 		row.appendChild( cell );
 		optionsSubPane.appendChild( row );
 		
-		var button = document.createElement( "INPUT" );
+		var button = document.createElement( "input" );
 		button.type = "button";
 		button.addEventListener( 'click', function(){window.location.reload()}, true );
 		button.value = "Reload page";
@@ -610,7 +695,7 @@ var WFA_OPTIONS =
 		WFA_OPTIONS.reloadButton = button;
 		
 		
-		var wowProgress = document.createElement( "SPAN" );
+		var wowProgress = document.createElement( "span" );
 		wowProgress.style.fontSize = "8px";
 		wowProgress.innerHTML = 'Powered By: <a href="http://wowprogress.com">WowProgress</a>';
 		
@@ -646,12 +731,12 @@ var WFA_OPTIONS =
 		var target = event.target;
 		if( target && target.id == WFA_OPTIONS.COLOR_BORDER_ID )
 		{
-			WFA.enableBorderColor( target.checked );
+			WFA.toggleBorderColor( target.checked );
 			WFA_OPTIONS.reloadButton.style.visibility = "visible";
 		}
 		else if( target && target.id == WFA_OPTIONS.IGNORE_POSTS_ID )
 		{
-			WFA.enableIgnorePosts( target.checked );
+			WFA.toggleIgnorePosts( target.checked );
 			WFA_OPTIONS.reloadButton.style.visibility = "visible";
 		}  
 		
@@ -790,7 +875,7 @@ var WFA_UPDATE =
 		if( !WFA_UPDATE.isUpdateNotifyShown )
 		{
 			WFA_UPDATE.isUpdateNotifyShown = true;
-			var div = document.createElement( "DIV" );
+			var div = document.createElement( "div" );
 
 			div.style.position = "fixed";
 			div.style.width = "300px";
@@ -845,94 +930,302 @@ var WFA_UPDATE =
 	}
 }
 
-
+/**************************************************************
+ * Post object from the original WoW Forums. Contains all
+ * basic operations needed to properly manipulate a post
+ * as an object.
+ **************************************************************/
 WFA_WowPost = 
 {
+	//class constants for types
 	POST_BLUE: 'BLUE',
 	POST_PLAYER: 'GENERAL',
 	POST_GREEN: 'GREEN',
 	POST_UNKNOWN: 'UNKNOWN',
+	_rankIds: 0,
+	getNextRankId: function()
+	{
+		WFA_WowPost._rankIds += 1;
+		return "wfaRank_" + WFA_WowPost._rankIds;	
+	},
 	prototype:
 	{
+		
 		playeName: '',
 		playerNode: null,
 		guildName: '',
-		guildNode: null,
+		guildNode: null, //the node that holds the guild armory link
 		realmName: '',
-		region: '',
-		attachNode: '',
-		node: null,
-		guildLink: '',
-		type: '',
-		_index: '',
+		region: '', //us/eu
+		attachNode: '', //the node to attach the ranking information to
+		node: null, //the outer post DIV element
+		guildLink: '',//guild armory link for realm/guild name parsing
+		type: '',	  //the type of post this is based on POST_ class constants
+		_index: '',   //internal id for debugging purposes
+		_rankNodeIds: null, //array of HTML node ids of the currently displayed ranks
+		/**************************************************************
+		 * Constructor for this object. Takes in a post node and
+		 * the posts region.
+		 *
+		 * @constructor
+		 * @param (HTML Node) node The posts outer HTML node
+		 * @param (String) region The posts region, EU/US
+		 *
+		 **************************************************************/
 		init:function( node, region )
 		{
-			this.type = WFA_WowPost.POST_UNKNOWN;
+			this.type = WFA_WowPost.POST_PLAYER;
 			this.node = node;
 			this.region = region;
+			this._rankNodeIds = [];
 		},
+		/**************************************************************
+		 * Returns whether this post represents a Blue/Blizzard
+		 * post.
+		 *
+		 * @return (Boolean) If this is a Blizzard employee post
+		 **************************************************************/
 		isBlue:function()
 		{
 			return this.type == WFA_WowPost.POST_BLUE;	
 		},
+		/**************************************************************
+		 * Returns whether this post represents a community MVP's post.
+		 *
+		 * @return (Boolean) If this is a MVP post
+		 **************************************************************/
 		isGreen:function()
 		{
 			return this.type == WFA_WowPost.POST_GREEN;	
 		},
+		/**************************************************************
+		 * Adds a rank line of text in the format of <label> <value>
+		 * in the supplied colors as CSS color: <label/value color>
+		 * definitions (e.g. #XXXXXX or black,red,green, etc).
+		 *
+		 * @param (String) label The label text to display for this rank (default: node id)
+		 * @param (String) labelColor The color for the label text (default: white)
+		 * @param (String) value The value of the rank (default: "N/A")
+		 * @param (String) valueColor The color of the rank value (default: white)
+		 * @return (String) The HTML Node ID of the new rank
+		 *
+		 **************************************************************/
 		addRank:function( label, labelColor, value, valueColor )
 		{
-			var rank = document.createElement( "DIV" );
-			rank.innerHTML = '<div><span style="color:'+ labelColor +'">' + label + ':</span><span style="color:'+ valueColor +'"> '  + value + '</span></div>';
+			labelColor = labelColor || 'white';
+			valueColor = valueColor || 'white';
+			
+			var rank = document.createElement( "div" );
+			var rankId = WFA_WowPost.getNextRankId();
+			
+			label = label || rankId;
+			value = value || "N/A";
+			
+			rank.innerHTML = '<div id="'+ rankId +'" class="wfaRankContainer"><span class="wfaRankDesc" style="color:'+ labelColor +'">' + label + ':</span><span class="wfaRank"  style="color:'+ valueColor +'"> '  + value + '</span></div>';
 			this.attachNode.appendChild( rank );
+			this._rankNodeIds.push( rankId );
+			return rankId;
 		},
+		/**************************************************************
+		 * Applies sytles to the post and adds visible ranks.
+		 *
+		 **************************************************************/
 		update:function()
 		{
 			var obj = this;
 			var callBack = function( rankInfo ){ obj.updateCallBack( rankInfo ) }
 			WFA.getGuildRankInfo( this.region, this.realmName,  this.guildName, callBack );
 		},
+		/**************************************************************
+		 * Call back from obtaining rank information for 
+		 * WFA.getGuildRankInfo.
+		 *
+		 * @param (Object) rankInfo The rank information according to
+		 *                          the return information of 
+		 *                          WFA.getGuildRankInfo()
+		 **************************************************************/
 		updateCallBack:function( rankInfo )
 		{
-
 			if( rankInfo && typeof(rankInfo) == 'object' && rankInfo.world_rank )
 			{
 				this.addRank( 'World', '#FFFFFF', rankInfo.world_rank, WFA.getRankColor( rankInfo.world_rank ) );
 				this.addRank( this.region, '#FFFFFF', rankInfo.area_rank, WFA.getRankColor( rankInfo.area_rank ) );
+				
+				if( WFA.isApplyBorderColorEnabled() )
+				{
+					this.applyBorderColor( WFA.getRankBorderColor( rankInfo.world_rank ) );
+				}
 			}
 			else
 			{
-				if( WFA.getIgnorePosts() )
+				if( WFA.isIgnorePostsEnabled() )
 				{
 					this.fade();	
 				}
 			}
 		},
+		/**************************************************************
+		 * Applies a border to the post with the given color.
+		 *
+		 * @param (String) color A CSS safe color
+		 *
+		 **************************************************************/
+		applyBorderColor: function( color )
+		{
+			if( color && this.node )
+			{
+				this.node.style.border = "1px solid " + color;
+				this.node.style.marginTop = "2px";
+			}	
+		},
+		/**************************************************************
+		 * Parses the guild name out of a guild armory link.
+		 *
+		 * @param (String) armoryLink A valid guild armory link.
+		 * @return (String) The guild's name
+		 *
+		 **************************************************************/
 		parseGuildName: function( armoryLink )
 		{
 			var url = unescape( armoryLink );
 			var values = url.match( GUILD_LINK_PARSER );
 			return values[2]
 		},
+		/**************************************************************
+		 * Parses the realm name out of a guild armory link.
+		 *
+		 * @param (String) armoryLink A valid guild armory link.
+		 * @return (String) The guild's realm name
+		 *
+		 **************************************************************/		
 		parseRealmName: function( armoryLink )
 		{
 			var url = unescape( armoryLink );
 			var values = url.match( GUILD_LINK_PARSER );
 			return values[1]
 		},
+		/**************************************************************
+		 * Fades this post via CSS opacity settings.
+		 *
+		 **************************************************************/
 		fade: function()
 		{
 			if( this.node )
 			{
 				this.node.style.opacity = WFA.ignoredPostOpacity;
 			}
+		},
+		/**************************************************************
+		 * Computes the node that represents the guild name node
+		 * anchor and returns it.
+		 *
+		 * @return (Html Node) The anchor node that holds the guild name
+		 *
+		 **************************************************************/
+		computeGuildNode: function()
+		{
+			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="guild"]//x:a', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
+			return result.iterateNext();
+		},
+		/**************************************************************
+		 * Returns and computes, if necessary, the anchor tag that
+		 * holds the guild's name & armory link.
+		 *
+		 * @return (Html Node) An anchor node
+		 *
+		 **************************************************************/
+		getGuildNode: function()
+		{
+			if( !this.guildNode )
+			{
+				this.guildNode = this.computeGuildNode();	
+			}
+			return this.guildNode;
+		},
+		/**************************************************************
+		 * Computes the node that represents the player name node
+		 * anchor and returns it.
+		 *
+		 * @return (Html Node) The anchor node that holds the player name
+		 *
+		 **************************************************************/
+		computePlayerNode: function()
+		{
+			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="user-name"]/x:a[@class="context-link"]', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
+			return result.iterateNext();
+		},
+		/**************************************************************
+		 * Returns and computes, if necessary, the anchor tag that
+		 * holds the player's name & armory link.
+		 *
+		 * @return (Html Node) An anchor node
+		 *
+		 **************************************************************/
+		getPlayerNode: function()
+		{
+			if( !this.playerNode )
+			{
+				this.playerNode = this.computePlayerNode();	
+			}
+			return this.playerNode;
+		},
+		/**************************************************************
+		 * Returns the node that ranks should be attached to.
+		 *
+		 * @return (Html Node) A HTML node
+		 *
+		 **************************************************************/
+		getAttachNode: function()
+		{
+			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="character-info"]', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
+			return result.iterateNext();
 		}
 	}
 };
 
+/**************************************************************
+ * Post object from the original WoW Forums, by a blue.
+ * Doesn't do much, eh?
+ **************************************************************/
+WFA_WowPostBlue = 
+{
+	prototype:
+	{
+		init:function( node, region )
+		{
+			this.guildName = ''
+			this.realmName = '';
+			this.region = region;
+			this.playerName = '';
+			this.attachNode = null;
+			this.type = WFA_WowPost.POST_BLUE;
+		},
+		addRank: emptyFunction,
+		update: emptyFunction,
+		updateCallBack: emptyFunction
+	}	
+}
+
+
+/**************************************************************
+ * Post object from the Battle.net WoW Forums. Contains all
+ * basic operations needed to properly manipulate a post
+ * as an object.
+ **************************************************************/
 WFA_BnetPost =
 {
 	prototype:
 	{
+		/**************************************************************
+		 * Constructor for this object. Takes in a post node and
+		 * the posts region.
+		 *
+		 * @constructor
+		 * @override
+		 * @param (HTML Node) node The posts outer HTML node
+		 * @param (String) region The posts region, EU/US
+		 *
+		 **************************************************************/
 		init:function( node, region )
 		{
 			WFA_WowPost.prototype.init.apply( this, arguments );
@@ -962,11 +1255,27 @@ WFA_BnetPost =
 				this.type = WFA_WowPost.POST_PLAYER;
 			}
 		},
+		/**************************************************************
+		 * Computes the node that represents the guild name node
+		 * anchor and returns it.
+		 *
+		 * @override
+		 * @return (Html Node) The anchor node that holds the guild name
+		 *
+		 **************************************************************/
 		computeGuildNode: function()
 		{
 			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="guild"]//x:a', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
 			return result.iterateNext();
 		},
+		/**************************************************************
+		 * Returns and computes, if necessary, the anchor tag that
+		 * holds the guild's name & armory link.
+		 *
+		 * @override
+		 * @return (Html Node) An anchor node
+		 *
+		 **************************************************************/
 		getGuildNode: function()
 		{
 			if( !this.guildNode )
@@ -975,11 +1284,27 @@ WFA_BnetPost =
 			}
 			return this.guildNode;
 		},
+		/**************************************************************
+		 * Computes the node that represents the player name node
+		 * anchor and returns it.
+		 *
+		 * @override
+		 * @return (Html Node) The anchor node that holds the player name
+		 *
+		 **************************************************************/
 		computePlayerNode: function()
 		{
 			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="user-name"]/x:a[@class="context-link"]', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
 			return result.iterateNext();
 		},
+		/**************************************************************
+		 * Returns and computes, if necessary, the anchor tag that
+		 * holds the player's name & armory link.
+		 *
+		 * @override
+		 * @return (Html Node) An anchor node
+		 *
+		 **************************************************************/
 		getPlayerNode: function()
 		{
 			if( !this.playerNode )
@@ -988,6 +1313,13 @@ WFA_BnetPost =
 			}
 			return this.playerNode;
 		},
+		/**************************************************************
+		 * Returns the node that ranks should be attached to.
+		 *
+		 * @override
+		 * @return (Html Node) A HTML node
+		 *
+		 **************************************************************/
 		getAttachNode: function()
 		{
 			var result = document.evaluate( '//x:div[@id="'+this.node.id+'"]//x:div[@class="character-info"]', this.node, nameSpaceResolver, XPathResult.ANY_TYPE, null );
@@ -996,6 +1328,10 @@ WFA_BnetPost =
 	}
 };
 
+/**************************************************************
+ * Post object from the Battle.net WoW Forums, by a blue.
+ * Doesn't do much, eh?
+ **************************************************************/
 WFA_BnetPostBlue = 
 {
 	prototype:
@@ -1015,7 +1351,9 @@ WFA_BnetPostBlue =
 	}	
 }
 
-WFA_WowPost = classify( WFA_WowPost )
+//Extend objects to include parent
+WFA_WowPost = classify( WFA_WowPost );
+WFA_WowPostBlue = classify( WFA_WowPostBlue, WFA_WowPost );
 WFA_BnetPost = classify( WFA_BnetPost, WFA_WowPost );
 WFA_BnetPostBlue = classify( WFA_BnetPostBlue, WFA_WowPost );
 
@@ -1032,6 +1370,9 @@ var forumInfo = WFA.getForumInfo();
 var posts = [];
 var thisPost = null;
 var postObj = null;
+
+
+//find posts, create post objects
 for( var i = 0; i < postsArray.length; i++ )
 {
 		thisPost = postsArray[i];
@@ -1049,19 +1390,24 @@ for( var i = 0; i < postsArray.length; i++ )
 		}
 		else
 		{
-			postObj = new WFA_WowPost( thisPost, forumInfo.region );
+			if( hasClass( thisPost, 'blizzard' ) )
+			{
+				postObj = new WFA_WowPost( thisPost, forumInfo.region );
+			}
+			else
+			{
+				postObj = new WFA_WowPostBlue( thisPost, forumInfo.region );
+			}
+			
 		}
 		postObj._index = i;
 		posts.push( postObj );
 }
 
-posts[1].guildName = "howdy";
-
 for( var i = 0; i < posts.length; i++)
 {
 	posts[i].update();	
 }
-
 
 //create & show the options pane
 WFA_OPTIONS.initialize();
