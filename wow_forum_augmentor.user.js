@@ -2,8 +2,6 @@ WFA// ==UserScript==
 // @name		WoW Forum Augmentor
 // @namespace	WFA
 // @description	Enhances World of Warcraft NA/EU forums with WoW Progress scores
-// @include		http://forums.worldofwarcraft.com/*
-// @include		http://forums.wow-europe.com/*
 // @include		http://us.battle.net/wow/en/forum/topic/*
 // @include		http://eu.battle.net/wow/en/forum/topic/*
 // ==/UserScript==
