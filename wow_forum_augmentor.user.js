@@ -6,10 +6,27 @@
 // @include		http://eu.battle.net/wow/en/forum/topic/*
 // ==/UserScript==
 
-var WFA_VERSION = "_____18_____";
+var WFA_VERSION = "_____19_____";
 
-var GUILD_LINK_PARSER = /\?r=(.*?)&gn=(.*?)(&|$)/;
+var GUILD_LINK_PARSER = /en\/guild\/(.*?)\/(.*?)\//;
 
+//Use me to great the list of realm trans from the "All Realm" page on Battle.net
+/*
+var links = document.getElementsByClassName( 'int-padding' );
+var realms = {};
+for( var i = 0; i < links.length; i++ )
+{
+   realmName =  links[i].firstChild.data;
+   realmName = realmName.replace( /\s+/gm, '' ).toLowerCase();
+   transName = realmName.replace( /'|\s|’/g, "" );
+   realms[transName] =  realmName;
+   console.log( transName + ' - ' + realms[transName] );
+}
+JSON.stringify( realms ).replace( /,/g, ",\n" );
+*/
+
+//translate wow armory URL guild names to have proper apostrophese so we can change them to underscores for wow progress
+var WFA_REALM_TRANS ={"websitefeaturerequests":"websitefeaturerequests", "websitebugreports":"websitebugreports", "customersupport":"customersupport", "servicestatus":"servicestatus", "technicalsupport":"technicalsupport", "mactechnicalsupport":"mactechnicalsupport", "bugreport":"bugreport", "generaldiscussion":"generaldiscussion", "oceanicgeneraldiscussion":"oceanicgeneraldiscussion", "guildrecruitment":"guildrecruitment", "storyforum":"storyforum", "worldsendtavern":"world’sendtavern", "newplayerhelpandguides":"newplayerhelpandguides", "quests":"quests", "professions":"professions", "dungeonsandraids":"dungeonsandraids", "achievementsandguildadvancement":"achievementsandguildadvancement", "uiandmacro":"uiandmacro", "arenas":"arenas", "battlegrounds":"battlegrounds", "damagedealing":"damagedealing", "healing":"healing", "tanking":"tanking", "deathknight":"deathknight", "druid":"druid", "hunter":"hunter", "mage":"mage", "paladin":"paladin", "priest":"priest", "rogue":"rogue", "shaman":"shaman", "warlock":"warlock", "warrior":"warrior", "aegwynn":"aegwynn", "aeriepeak":"aeriepeak", "agamaggan":"agamaggan", "aggramar":"aggramar", "akama":"akama", "alexstrasza":"alexstrasza", "alleria":"alleria", "altarofstorms":"altarofstorms", "alteracmountains":"alteracmountains", "amanthul":"aman'thul", "andorhal":"andorhal", "anetheron":"anetheron", "antonidas":"antonidas", "anubarak":"anub'arak", "anvilmar":"anvilmar", "arathor":"arathor", "archimonde":"archimonde", "area52":"area52", "argentdawn":"argentdawn", "arthas":"arthas", "arygos":"arygos", "auchindoun":"auchindoun", "azgalor":"azgalor", "azjol-nerub":"azjol-nerub", "azshara":"azshara", "azuremyst":"azuremyst", "baelgun":"baelgun", "balnazzar":"balnazzar", "barthilas":"barthilas", "blackdragonflight":"blackdragonflight", "blackhand":"blackhand", "blackrock":"blackrock", "blackwaterraiders":"blackwaterraiders", "blackwinglair":"blackwinglair", "bladesedge":"blade'sedge", "bladefist":"bladefist", "bleedinghollow":"bleedinghollow", "bloodfurnace":"bloodfurnace", "bloodhoof":"bloodhoof", "bloodscalp":"bloodscalp", "bonechewer":"bonechewer", "boreantundra":"boreantundra", "boulderfist":"boulderfist", "bronzebeard":"bronzebeard", "burningblade":"burningblade", "burninglegion":"burninglegion", "caelestrasz":"caelestrasz", "cairne":"cairne", "cenarioncircle":"cenarioncircle", "cenarius":"cenarius", "chogall":"cho'gall", "chromaggus":"chromaggus", "coilfang":"coilfang", "crushridge":"crushridge", "daggerspine":"daggerspine", "dalaran":"dalaran", "dalvengyr":"dalvengyr", "darkiron":"darkiron", "darkspear":"darkspear", "darrowmere":"darrowmere", "dathremar":"dath’remar", "dawnbringer":"dawnbringer", "deathwing":"deathwing", "demonsoul":"demonsoul", "dentarg":"dentarg", "destromath":"destromath", "dethecus":"dethecus", "detheroc":"detheroc", "doomhammer":"doomhammer", "draenor":"draenor", "dragonblight":"dragonblight", "dragonmaw":"dragonmaw", "draktharon":"drak'tharon", "drakthul":"drak'thul", "draka":"draka", "dreadmaul":"dreadmaul", "drenden":"drenden", "dunemaul":"dunemaul", "durotan":"durotan", "duskwood":"duskwood", "earthenring":"earthenring", "echoisles":"echoisles", "eitrigg":"eitrigg", "eldrethalas":"eldre'thalas", "elune":"elune", "emeralddream":"emeralddream", "eonar":"eonar", "eredar":"eredar", "executus":"executus", "exodar":"exodar", "farstriders":"farstriders", "feathermoon":"feathermoon", "fenris":"fenris", "firetree":"firetree", "fizzcrank":"fizzcrank", "frostmane":"frostmane", "frostmourne":"frostmourne", "frostwolf":"frostwolf", "galakrond":"galakrond", "garithos":"garithos", "garona":"garona", "garrosh":"garrosh", "ghostlands":"ghostlands", "gilneas":"gilneas", "gnomeregan":"gnomeregan", "gorefiend":"gorefiend", "gorgonnash":"gorgonnash", "greymane":"greymane", "grizzlyhills":"grizzlyhills", "guldan":"gul'dan", "gundrak":"gundrak", "gurubashi":"gurubashi", "hakkar":"hakkar", "haomarush":"haomarush", "hellscream":"hellscream", "hydraxis":"hydraxis", "hyjal":"hyjal", "icecrown":"icecrown", "illidan":"illidan", "jaedenar":"jaedenar", "jubeithos":"jubei'thos", "kaelthas":"kael'thas", "kalecgos":"kalecgos", "kargath":"kargath", "kelthuzad":"kel'thuzad", "khadgar":"khadgar", "khazmodan":"khazmodan", "khazgoroth":"khaz'goroth", "kiljaeden":"kil'jaeden", "kilrogg":"kilrogg", "kirintor":"kirintor", "korgath":"korgath", "korialstrasz":"korialstrasz", "kultiras":"kultiras", "laughingskull":"laughingskull", "lethon":"lethon", "lightbringer":"lightbringer", "lightningsblade":"lightning'sblade", "lightninghoof":"lightninghoof", "llane":"llane", "lothar":"lothar", "madoran":"madoran", "maelstrom":"maelstrom", "magtheridon":"magtheridon", "maiev":"maiev", "malganis":"mal'ganis", "malfurion":"malfurion", "malorne":"malorne", "malygos":"malygos", "mannoroth":"mannoroth", "medivh":"medivh", "misha":"misha", "moknathal":"mok’nathal", "moonguard":"moonguard", "moonrunner":"moonrunner", "mugthol":"mug'thol", "muradin":"muradin", "nagrand":"nagrand", "nathrezim":"nathrezim", "nazgrel":"nazgrel", "nazjatar":"nazjatar", "nerzhul":"ner'zhul", "nesingwary":"nesingwary", "nordrassil":"nordrassil", "norgannon":"norgannon", "onyxia":"onyxia", "perenolde":"perenolde", "proudmoore":"proudmoore", "queldorei":"quel’dorei", "ravencrest":"ravencrest", "ravenholdt":"ravenholdt", "rexxar":"rexxar", "rivendare":"rivendare", "runetotem":"runetotem", "sargeras":"sargeras", "saurfang":"saurfang", "scarletcrusade":"scarletcrusade", "scilla":"scilla", "senjin":"sen'jin", "sentinels":"sentinels", "shadowcouncil":"shadowcouncil", "shadowmoon":"shadowmoon", "shadowsong":"shadowsong", "shandris":"shandris", "shatteredhalls":"shatteredhalls", "shatteredhand":"shatteredhand", "shuhalo":"shu'halo", "silverhand":"silverhand", "silvermoon":"silvermoon", "sistersofelune":"sistersofelune", "skullcrusher":"skullcrusher", "skywall":"skywall", "smolderthorn":"smolderthorn", "spinebreaker":"spinebreaker", "spirestone":"spirestone", "staghelm":"staghelm", "steamwheedlecartel":"steamwheedlecartel", "stonemaul":"stonemaul", "stormrage":"stormrage", "stormreaver":"stormreaver", "stormscale":"stormscale", "suramar":"suramar", "tanaris":"tanaris", "terenas":"terenas", "terokkar":"terokkar", "thaurissan":"thaurissan", "theforgottencoast":"theforgottencoast", "thescryers":"thescryers", "theunderbog":"theunderbog", "theventureco":"theventureco", "thoriumbrotherhood":"thoriumbrotherhood", "thrall":"thrall", "thunderhorn":"thunderhorn", "thunderlord":"thunderlord", "tichondrius":"tichondrius", "tortheldrin":"tortheldrin", "trollbane":"trollbane", "turalyon":"turalyon", "twistingnether":"twistingnether", "uldaman":"uldaman", "uldum":"uldum", "undermine":"undermine", "ursin":"ursin", "uther":"uther", "vashj":"vashj", "veknilash":"vek'nilash", "velen":"velen", "warsong":"warsong", "whisperwind":"whisperwind", "wildhammer":"wildhammer", "windrunner":"windrunner", "winterhoof":"winterhoof", "wyrmrestaccord":"wyrmrestaccord", "ysera":"ysera", "ysondre":"ysondre", "zangarmarsh":"zangarmarsh", "zuljin":"zul'jin", "zuluhed":"zuluhed"};
 
 /**************************************************************
  * It is what it is.
@@ -171,6 +188,7 @@ var WFA =
 	IS_REQUESTING: 1, //do not change: constant used to denote a requesting status
 	FAILED_REQUEST: 2,//do not change: constant used to denote a failed request
 	RANK_PROPERTY: "wfa_rankCache",
+	CACHE_VERSION_PROPERTY: "wfa_cacheVersion",
 	rankCache:{}, //do not change
 	MAX_CACHE_ENTRIES: 15000,
 
@@ -240,6 +258,7 @@ var WFA =
 	{
 		var json = JSON.stringify( WFA.rankCache );
 		localStorage.setItem( WFA.RANK_PROPERTY, json );
+		localStorage.setItem( WFA.CACHE_VERSION_PROPERTY, WFA_VERSION );
 	},
 	keys: function(o){ var a = []; for (var k in o) a.push(k); return a; },
 	/**************************************************************
@@ -250,31 +269,40 @@ var WFA =
 	restoreCache: function()
 	{
 		var json = localStorage.getItem( WFA.RANK_PROPERTY );
-		if( json )
+		var cacheVersion = localStorage.getItem( WFA.CACHE_VERSION_PROPERTY );
+		
+		if( !cacheVersion )
 		{
-			json = JSON.parse( json );
-			if( typeof( json ) != 'object' || json === null )
-			{
-				json = {};
-			}
+			json = {}
 		}
-	 
-		var cacheSize = WFA.keys(json).length;
-		//console.log( 'cs: ' + cacheSize );
-		if( cacheSize >= WFA.MAX_CACHE_ENTRIES )
+		else
 		{
-			var now = (new Date()).getTime();
-			var oldest = now - WFA.maxEntryAge;
-			 
-			for( record in json )
+			if( json )
 			{
-				delete( json[record] );
+				json = JSON.parse( json );
+				if( cacheVersion != WFA_VERSION || typeof( json ) != 'object' || json === null )
+				{
+					json = {};
+				}
 			}
-			//if still over limit, give up and wipe it.
-			cacheSize = WFA.keys(json).length;
+		 
+			var cacheSize = WFA.keys(json).length;
+			//console.log( 'cs: ' + cacheSize );
 			if( cacheSize >= WFA.MAX_CACHE_ENTRIES )
 			{
-				json = {};
+				var now = (new Date()).getTime();
+				var oldest = now - WFA.maxEntryAge;
+				 
+				for( record in json )
+				{
+					delete( json[record] );
+				}
+				//if still over limit, give up and wipe it.
+				cacheSize = WFA.keys(json).length;
+				if( cacheSize >= WFA.MAX_CACHE_ENTRIES )
+				{
+					json = {};
+				}
 			}
 		}
 		WFA.rankCache = json;
@@ -401,6 +429,7 @@ var WFA =
 			responseObj = WFA.FAILED_REQUEST;	
 		}
 		WFA.rankCache[key] = {value: responseObj, timestamp:(new Date()).getTime() };
+		
 		callBack( responseObj );
 		
 	},
@@ -1014,6 +1043,7 @@ WFA_WowPost =
 			valueColor = valueColor || 'white';
 			
 			var rank = document.createElement( "div" );
+			rank.style.clear = "both";
 			var rankId = WFA_WowPost.getNextRankId();
 			
 			label = label || rankId;
@@ -1044,6 +1074,7 @@ WFA_WowPost =
 		 **************************************************************/
 		updateCallBack:function( rankInfo )
 		{
+			
 			if( rankInfo && typeof(rankInfo) == 'object' && rankInfo.world_rank )
 			{
 				this.addRank( 'World', '#FFFFFF', rankInfo.world_rank, WFA.getRankColor( rankInfo.world_rank ) );
@@ -1085,9 +1116,10 @@ WFA_WowPost =
 		 **************************************************************/
 		parseGuildName: function( armoryLink )
 		{
+			
 			var url = unescape( armoryLink );
 			var values = url.match( GUILD_LINK_PARSER );
-			return values[2]
+			return values[2];
 		},
 		/**************************************************************
 		 * Parses the realm name out of a guild armory link.
@@ -1100,7 +1132,8 @@ WFA_WowPost =
 		{
 			var url = unescape( armoryLink );
 			var values = url.match( GUILD_LINK_PARSER );
-			return values[1]
+			
+			return WFA_REALM_TRANS[values[1]];
 		},
 		/**************************************************************
 		 * Fades this post via CSS opacity settings.
